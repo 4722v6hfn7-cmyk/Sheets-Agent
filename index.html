@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DB Monthly Expenses — Sheets Agent</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f1117;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: #1a1d27;
+      border-radius: 16px;
+      border: 1px solid #2a2d3a;
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    }
+
+    .header {
+      padding: 24px 28px 20px;
+      border-bottom: 1px solid #2a2d3a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #34a853, #1a8a3c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .header-title {
+      color: #f0f2f8;
+      font-weight: 600;
+      font-size: 15px;
+      letter-spacing: -0.2px;
+    }
+
+    .header-sub {
+      color: #5a5f7a;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .body {
+      padding: 24px 28px;
+    }
+
+    .label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    label {
+      color: #9da3be;
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .line-count {
+      background: #252836;
+      color: #6c73a0;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid #2a2d3a;
+      display: none;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #12141e;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      color: #c8cde8;
+      font-size: 12.5px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      padding: 14px;
+      resize: vertical;
+      outline: none;
+      line-height: 1.6;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: #34a853; }
+
+    .columns {
+      margin-top: 12px;
+      padding: 10px 14px;
+      background: #12141e;
+      border-radius: 8px;
+      border: 1px solid #2a2d3a;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .col-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .col-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .col-label {
+      color: #5a5f7a;
+      font-size: 11px;
+    }
+
+    .status-msg {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .status-msg.success {
+      background: rgba(52,168,83,0.1);
+      border: 1px solid rgba(52,168,83,0.3);
+      color: #34a853;
+    }
+
+    .status-msg.error {
+      background: rgba(234,67,53,0.1);
+      border: 1px solid rgba(234,67,53,0.3);
+      color: #ea4335;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .btn-clear {
+      flex: 0 0 auto;
+      padding: 11px 18px;
+      background: transparent;
+      border: 1px solid #2a2d3a;
+      border-radius: 8px;
+      color: #5a5f7a;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-clear:hover {
+      border-color: #3a3d4a;
+      color: #9da3be;
+    }
+
+    .btn-send {
+      flex: 1;
+      padding: 11px 18px;
+      background: linear-gradient(135deg, #34a853, #1a8a3c);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.2px;
+    }
+
+    .btn-send:disabled {
+      background: #1e2230;
+      color: #3a4060;
+      cursor: not-allowed;
+    }
+
+    .footer-note {
+      margin-top: 16px;
+      color: #3a3f58;
+      font-size: 11px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="header-icon">📊</div>
+      <div>
+        <div class="header-title">DB Monthly Expenses</div>
+        <div class="header-sub">Inserção automática via Google Sheets API</div>
+      </div>
+    </div>
+
+    <div class="body">
+      <div class="label-row">
+        <label>Bloco TSV</label>
+        <span class="line-count" id="lineCount"></span>
+      </div>
+
+      <textarea
+        id="tsvInput"
+        placeholder="Cole aqui o bloco TSV gerado pelo agente...
+
+Ex:
+20/05/2025	Mercado Livre	Compras	R$ 89,90"
+        oninput="onTsvChange()"
+      ></textarea>
+
+      <div class="columns">
+        <div class="col-item"><div class="col-dot" style="background:#34a853"></div><span class="col-label">Data</span></div>
+        <div class="col-item"><div class="col-dot" style="background:#4285f4"></div><span class="col-label">Local</span></div>
+        <div class="col-item"><div class="col-dot" style="background:#fbbc04"></div><span class="col-label">Classificação</span></div>
+        <div class="col-item"><div class="col-dot" style="background:#ea4335"></div><span class="col-label">Valor (R$)</span></div>
+      </div>
+
+      <div class="status-msg" id="statusMsg">
+        <span id="statusIcon"></span>
+        <span id="statusText"></span>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-clear" onclick="handleClear()">Limpar</button>
+        <button class="btn-send" id="btnSend" onclick="handleSend()" disabled>Enviar para Sheets →</button>
+      </div>
+
+      <div class="footer-note">Na primeira vez, o Google vai pedir autorização de acesso à planilha.</div>
+    </div>
+  </div>
+
+  <script>
+    const CLIENT_ID     = "1007458849107-8a01bj9u3r1o0nc7ln51nkuepmke7ba0.apps.googleusercontent.com";
+    const SPREADSHEET_ID = "1-K3FWcx-PhAB0asfwjrSGntrz1hgnzzCtzQA8DBnaYM";
+    const SHEET_NAME    = "DB Monthly Expenses";
+    const SCOPES        = "https://www.googleapis.com/auth/spreadsheets";
+
+    let accessToken = null;
+
+    function onTsvChange() {
+      const val = document.getElementById("tsvInput").value.trim();
+      const lines = val ? val.split("\n").filter(l => l.trim()).length : 0;
+      const countEl = document.getElementById("lineCount");
+      const btnSend = document.getElementById("btnSend");
+
+      if (lines > 0) {
+        countEl.style.display = "inline";
+        countEl.textContent = lines + " linha" + (lines !== 1 ? "s" : "");
+        btnSend.disabled = false;
+      } else {
+        countEl.style.display = "none";
+        btnSend.disabled = true;
+      }
+    }
+
+    function parseTsv(raw) {
+      return raw.trim().split("\n")
+        .map(line => line.split("\t").map(c => c.trim()))
+        .filter(row => row.some(c => c !== ""));
+    }
+
+    function showStatus(type, text) {
+      const el = document.getElementById("statusMsg");
+      const icon = document.getElementById("statusIcon");
+      const msg  = document.getElementById("statusText");
+      el.className = "status-msg " + type;
+      el.style.display = "flex";
+      icon.textContent = type === "success" ? "✓" : "✕";
+      msg.textContent  = text;
+    }
+
+    function hideStatus() {
+      document.getElementById("statusMsg").style.display = "none";
+    }
+
+    function handleClear() {
+      document.getElementById("tsvInput").value = "";
+      document.getElementById("btnSend").disabled = true;
+      document.getElementById("lineCount").style.display = "none";
+      hideStatus();
+      accessToken = null;
+    }
+
+    async function findLastRow(token) {
+      const range = encodeURIComponent(SHEET_NAME + "!A:A");
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}`,
+        { headers: { Authorization: "Bearer " + token } }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.values ? data.values.length : 1;
+    }
+
+    async function appendRows(token, rows) {
+      const lastRow  = await findLastRow(token);
+      const startRow = lastRow + 1;
+      const range    = encodeURIComponent(SHEET_NAME + "!A" + startRow);
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+        {
+          method: "PUT",
+          headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+          body: JSON.stringify({ values: rows })
+        }
+      );
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message);
+      return data.updatedRows || rows.length;
+    }
+
+    async function handleSend() {
+      const raw = document.getElementById("tsvInput").value;
+      if (!raw.trim()) { showStatus("error", "Cole o bloco TSV antes de enviar."); return; }
+
+      const rows = parseTsv(raw);
+      if (!rows.length) { showStatus("error", "Nenhuma linha válida encontrada."); return; }
+
+      const btn = document.getElementById("btnSend");
+      btn.disabled = true;
+      btn.textContent = "🔐 Autorizando...";
+      hideStatus();
+
+      try {
+        await new Promise((resolve, reject) => {
+          const tc = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: SCOPES,
+            callback: (resp) => {
+              if (resp.error) reject(new Error(resp.error));
+              else { accessToken = resp.access_token; resolve(); }
+            }
+          });
+          tc.requestAccessToken({ prompt: accessToken ? "" : "consent" });
+        });
+
+        btn.textContent = "⏳ Enviando...";
+        const inserted = await appendRows(accessToken, rows);
+        showStatus("success", inserted + " linha(s) inserida(s) com sucesso abaixo do último lançamento.");
+        document.getElementById("tsvInput").value = "";
+        document.getElementById("lineCount").style.display = "none";
+      } catch(err) {
+        showStatus("error", "Erro: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Enviar para Sheets →";
+      }
+    }
+  </script>
+</body>
+</html>
