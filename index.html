@@ -1,104 +1,453 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DB Monthly Expenses — Sheets Agent</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense App</title>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    :root {
+      --bg: #0b0d14;
+      --surface: #13151f;
+      --surface2: #1a1d2b;
+      --border: #22253a;
+      --text: #e8eaf6;
+      --muted: #4a4f6e;
+      --accent: #6c8ef5;
+      --green: #34c97a;
+      --yellow: #f5a623;
+      --red: #f5524a;
+      --topbar-h: 56px;
+      --drawer-w: 260px;
+      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
     body {
-      min-height: 100vh;
-      background: #0f1117;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
       font-family: 'Inter', 'Segoe UI', sans-serif;
-      padding: 24px;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    .card {
-      width: 100%;
-      max-width: 560px;
-      background: #1a1d27;
-      border-radius: 16px;
-      border: 1px solid #2a2d3a;
-      overflow: hidden;
-      box-shadow: 0 24px 64px rgba(0,0,0,0.4);
-    }
-
-    .header {
-      padding: 24px 28px 20px;
-      border-bottom: 1px solid #2a2d3a;
+    /* ══════════════════════════════
+       TOPBAR
+    ══════════════════════════════ */
+    .topbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--topbar-h);
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
+      padding: 0 16px;
       gap: 12px;
+      z-index: 200;
     }
 
-    .header-icon {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      background: linear-gradient(135deg, #34a853, #1a8a3c);
+    .hamburger {
+      width: 36px; height: 36px;
+      border: none;
+      background: none;
+      cursor: pointer;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      gap: 5px;
+      border-radius: 8px;
+      transition: background 0.15s;
       flex-shrink: 0;
     }
 
-    .header-title {
-      color: #f0f2f8;
-      font-weight: 600;
-      font-size: 15px;
-      letter-spacing: -0.2px;
+    .hamburger:hover { background: var(--surface2); }
+
+    .hamburger span {
+      display: block;
+      width: 20px; height: 2px;
+      background: var(--text);
+      border-radius: 2px;
+      transition: all 0.25s;
+      transform-origin: center;
     }
 
-    .header-sub {
-      color: #5a5f7a;
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    .topbar-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .topbar-title span { color: var(--accent); }
+
+    .topbar-page {
       font-size: 12px;
-      margin-top: 2px;
+      color: var(--muted);
     }
 
-    .body {
-      padding: 24px 28px;
+    /* ══════════════════════════════
+       DRAWER OVERLAY
+    ══════════════════════════════ */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(2px);
+      z-index: 300;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
     }
 
-    .label-row {
+    .overlay.visible { opacity: 1; pointer-events: all; }
+
+    /* ══════════════════════════════
+       DRAWER
+    ══════════════════════════════ */
+    .drawer {
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      width: var(--drawer-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      z-index: 400;
+      transform: translateX(calc(-1 * var(--drawer-w)));
+      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top);
+    }
+
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .drawer-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+
+    .drawer-logo span { color: var(--accent); }
+
+    .drawer-sub {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .drawer-nav {
+      flex: 1;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .drawer-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      border-radius: 10px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--muted);
+      transition: all 0.15s;
+      width: 100%;
+      text-align: left;
+    }
+
+    .drawer-item:hover { background: var(--surface2); color: var(--text); }
+
+    .drawer-item.active {
+      background: rgba(108, 142, 245, 0.12);
+      color: var(--accent);
+    }
+
+    .drawer-item .di-icon { font-size: 18px; flex-shrink: 0; }
+
+    .drawer-item .di-label { font-weight: 500; }
+
+    .drawer-item .di-desc {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .drawer-item.active .di-desc { color: rgba(108,142,245,0.6); }
+
+    .drawer-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 10px;
+    }
+
+    .drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ══════════════════════════════
+       PAGES
+    ══════════════════════════════ */
+    .page { display: none; padding: 20px 16px; margin-top: var(--topbar-h); }
+    .page.active { display: block; }
+
+    /* ══════════════════════════════
+       SHARED COMPONENTS
+    ══════════════════════════════ */
+    .page-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+      color: var(--text);
+      margin-bottom: 20px;
+    }
+
+    .page-title span { color: var(--accent); }
+
+    .status-bar {
+      display: none;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    select, input[type="number"] {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 13px;
+      padding: 8px 12px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      -webkit-appearance: none;
+    }
+
+    select:focus, input[type="number"]:focus { border-color: var(--accent); }
+
+    .btn {
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #5a7ef0; }
+    .btn-primary:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+    thead th {
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    thead th.r { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--surface2); }
+    tbody td { padding: 10px 14px; color: var(--text); }
+    tbody td.r { text-align: right; font-family: var(--font-mono); font-size: 12px; }
+
+    .total-row td {
+      background: var(--surface2);
+      font-weight: 600;
+      border-top: 1px solid var(--border);
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 13px;
+    }
+
+    .empty { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
+
+    /* ══════════════════════════════
+       DASHBOARD
+    ══════════════════════════════ */
+    .controls-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      align-items: center;
+    }
+
+    .budget-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .budget-row label { color: var(--muted); font-size: 12px; }
+
+    .budget-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+    }
+
+    .budget-prefix { color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
+
+    #budgetInput {
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 14px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      width: 90px;
+      outline: none;
+    }
+
+    .btn-ghost {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      font-size: 11px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: var(--accent); }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .kpi-card.blue::before   { background: var(--accent); }
+    .kpi-card.green::before  { background: var(--green); }
+    .kpi-card.yellow::before { background: var(--yellow); }
+    .kpi-card.red::before    { background: var(--red); }
+
+    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
+    .kpi-value { font-size: 18px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.5px; color: var(--text); }
+    .kpi-value.neg  { color: var(--red); }
+    .kpi-value.warn { color: var(--yellow); }
+    .kpi-value.good { color: var(--green); }
+    .kpi-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
+
+    .progress-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+    .progress-bar-bg { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: var(--green); }
+    .progress-bar-fill.warn   { background: var(--yellow); }
+    .progress-bar-fill.danger { background: var(--red); }
+
+    /* ══════════════════════════════
+       IMPORT
+    ══════════════════════════════ */
+    .import-label-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 10px;
     }
 
-    label {
-      color: #9da3be;
-      font-size: 12px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-    }
-
-    .line-count {
-      background: #252836;
-      color: #6c73a0;
+    .line-badge {
+      background: var(--surface2);
+      color: var(--muted);
       font-size: 11px;
       padding: 2px 8px;
       border-radius: 20px;
-      border: 1px solid #2a2d3a;
-      display: none;
+      border: 1px solid var(--border);
     }
 
     textarea {
       width: 100%;
-      height: 180px;
+      height: 200px;
       background: #12141e;
-      border: 1px solid #2a2d3a;
+      border: 1px solid var(--border);
       border-radius: 10px;
       color: #c8cde8;
-      font-size: 12.5px;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      font-family: var(--font-mono);
       padding: 14px;
       resize: vertical;
       outline: none;
@@ -106,82 +455,41 @@
       transition: border-color 0.2s;
     }
 
-    textarea:focus { border-color: #34a853; }
+    textarea:focus { border-color: var(--accent); }
 
-    .columns {
-      margin-top: 12px;
+    .col-strip {
+      margin-top: 10px;
       padding: 10px 14px;
       background: #12141e;
       border-radius: 8px;
-      border: 1px solid #2a2d3a;
+      border: 1px solid var(--border);
       display: flex;
-      gap: 16px;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
-    .col-item {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
+    .col-item { display: flex; align-items: center; gap: 5px; }
+    .col-dot  { width: 6px; height: 6px; border-radius: 50%; }
+    .col-label-sm { color: var(--muted); font-size: 11px; }
 
-    .col-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-    }
+    .import-btn-row { display: flex; gap: 10px; margin-top: 16px; }
 
-    .col-label {
-      color: #5a5f7a;
-      font-size: 11px;
-    }
-
-    .status-msg {
-      margin-top: 14px;
-      padding: 12px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      display: none;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-msg.success {
-      background: rgba(52,168,83,0.1);
-      border: 1px solid rgba(52,168,83,0.3);
-      color: #34a853;
-    }
-
-    .status-msg.error {
-      background: rgba(234,67,53,0.1);
-      border: 1px solid rgba(234,67,53,0.3);
-      color: #ea4335;
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 18px;
-    }
-
-    .btn-clear {
+    .btn-clear-imp {
       flex: 0 0 auto;
       padding: 11px 18px;
       background: transparent;
-      border: 1px solid #2a2d3a;
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #5a5f7a;
+      color: var(--muted);
       font-size: 13px;
       cursor: pointer;
+      font-family: inherit;
       transition: all 0.15s;
     }
 
-    .btn-clear:hover {
-      border-color: #3a3d4a;
-      color: #9da3be;
-    }
+    .btn-clear-imp:hover { border-color: #3a3d4a; color: var(--text); }
 
-    .btn-send {
+    .btn-send-imp {
       flex: 1;
       padding: 11px 18px;
       background: linear-gradient(135deg, #34a853, #1a8a3c);
@@ -191,187 +499,484 @@
       font-size: 13px;
       font-weight: 600;
       cursor: pointer;
+      font-family: inherit;
       transition: all 0.15s;
-      letter-spacing: 0.2px;
     }
 
-    .btn-send:disabled {
-      background: #1e2230;
-      color: #3a4060;
-      cursor: not-allowed;
-    }
+    .btn-send-imp:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
 
-    .footer-note {
-      margin-top: 16px;
-      color: #3a3f58;
-      font-size: 11px;
-      text-align: center;
-    }
+    .import-footer { margin-top: 14px; color: var(--muted); font-size: 11px; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="header">
-      <div class="header-icon">📊</div>
-      <div>
-        <div class="header-title">DB Monthly Expenses</div>
-        <div class="header-sub">Inserção automática via Google Sheets API</div>
+
+  <!-- ══ TOPBAR ══ -->
+  <header class="topbar">
+    <button class="hamburger" id="hamburger" onclick="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="topbar-title">💳 <span>Expense</span> App</div>
+    <div class="topbar-page" id="topbarPage">Dashboard</div>
+  </header>
+
+  <!-- ══ OVERLAY ══ -->
+  <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+  <!-- ══ DRAWER ══ -->
+  <nav class="drawer" id="drawer">
+    <div class="drawer-header">
+      <div class="drawer-logo">💳 <span>Expense</span></div>
+      <div class="drawer-sub">Gestão de gastos pessoais</div>
+    </div>
+
+    <div class="drawer-nav">
+      <button class="drawer-item active" id="di-dashboard" onclick="switchPage('dashboard')">
+        <span class="di-icon">📊</span>
+        <div>
+          <div class="di-label">Dashboard</div>
+          <div class="di-desc">Resumo mensal e análises</div>
+        </div>
+      </button>
+
+      <div class="drawer-divider"></div>
+
+      <button class="drawer-item" id="di-import" onclick="switchPage('import')">
+        <span class="di-icon">📥</span>
+        <div>
+          <div class="di-label">Importar Extrato</div>
+          <div class="di-desc">Cole o TSV do agente</div>
+        </div>
+      </button>
+    </div>
+
+    <div class="drawer-footer">
+      DB Monthly Expenses · Google Sheets
+    </div>
+  </nav>
+
+  <!-- ══ PAGE: DASHBOARD ══ -->
+  <div class="page active" id="page-dashboard">
+    <div class="page-title">📊 <span>Dashboard</span></div>
+
+    <div class="controls-row">
+      <select id="selMonth">
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
+        <option value="3">Março</option><option value="4">Abril</option>
+        <option value="5">Maio</option><option value="6">Junho</option>
+        <option value="7">Julho</option><option value="8">Agosto</option>
+        <option value="9">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="selYear"></select>
+      <button class="btn btn-primary" id="btnLoad" onclick="loadDashboard()">Carregar</button>
+    </div>
+
+    <div class="budget-row">
+      <label>Orçamento:</label>
+      <div class="budget-input-wrap">
+        <span class="budget-prefix">R$</span>
+        <input type="number" id="budgetInput" value="8000" min="0" step="100"/>
+      </div>
+      <button class="btn-ghost" onclick="saveBudget()">Salvar</button>
+    </div>
+
+    <div class="status-bar" id="dashStatus"></div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card blue">
+        <div class="kpi-label">Orçamento</div>
+        <div class="kpi-value" id="kpiBudget">—</div>
+        <div class="kpi-sub">limite mensal</div>
+      </div>
+      <div class="kpi-card red">
+        <div class="kpi-label">Gasto</div>
+        <div class="kpi-value" id="kpiSpent">—</div>
+        <div class="kpi-sub" id="kpiSpentSub">—</div>
+      </div>
+      <div class="kpi-card green">
+        <div class="kpi-label">Restante</div>
+        <div class="kpi-value" id="kpiRemaining">—</div>
+        <div class="kpi-sub">disponível</div>
+      </div>
+      <div class="kpi-card yellow">
+        <div class="kpi-label">Por dia</div>
+        <div class="kpi-value" id="kpiPerDay">—</div>
+        <div class="kpi-sub" id="kpiPerDaySub">—</div>
       </div>
     </div>
 
-    <div class="body">
-      <div class="label-row">
-        <label>Bloco TSV</label>
-        <span class="line-count" id="lineCount"></span>
+    <div class="progress-wrap">
+      <div class="progress-header">
+        <span>Consumo do orçamento</span>
+        <span id="progressPct">—</span>
       </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+      </div>
+    </div>
 
-      <textarea
-        id="tsvInput"
-        placeholder="Cole aqui o bloco TSV gerado pelo agente...
+    <div class="section-title">Gastos por semana</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Semana</th><th class="r">Total (R$)</th></tr></thead>
+        <tbody id="weeklyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div class="section-title">Gastos por dia</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Data</th><th class="r">Total (R$)</th></tr></thead>
+        <tbody id="dailyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody>
+      </table>
+    </div>
+
+    <div style="color:var(--muted);font-size:11px;text-align:center;margin-top:8px;padding-bottom:24px" id="lastUpdate"></div>
+  </div>
+
+  <!-- ══ PAGE: IMPORT ══ -->
+  <div class="page" id="page-import">
+    <div class="page-title">📥 <span>Importar</span> Extrato</div>
+
+    <div class="status-bar" id="importStatus"></div>
+
+    <div class="import-label-row">
+      <span class="section-title" style="margin:0">Bloco TSV</span>
+      <span class="line-badge" id="lineBadge" style="display:none"></span>
+    </div>
+
+    <textarea id="tsvInput"
+      placeholder="Cole aqui o bloco TSV gerado pelo agente...
 
 Ex:
 20/05/2025	Mercado Livre	Compras	R$ 89,90"
-        oninput="onTsvChange()"
-      ></textarea>
+      oninput="onTsvChange()"></textarea>
 
-      <div class="columns">
-        <div class="col-item"><div class="col-dot" style="background:#34a853"></div><span class="col-label">Data</span></div>
-        <div class="col-item"><div class="col-dot" style="background:#4285f4"></div><span class="col-label">Local</span></div>
-        <div class="col-item"><div class="col-dot" style="background:#fbbc04"></div><span class="col-label">Classificação</span></div>
-        <div class="col-item"><div class="col-dot" style="background:#ea4335"></div><span class="col-label">Valor (R$)</span></div>
-      </div>
-
-      <div class="status-msg" id="statusMsg">
-        <span id="statusIcon"></span>
-        <span id="statusText"></span>
-      </div>
-
-      <div class="btn-row">
-        <button class="btn-clear" onclick="handleClear()">Limpar</button>
-        <button class="btn-send" id="btnSend" onclick="handleSend()" disabled>Enviar para Sheets →</button>
-      </div>
-
-      <div class="footer-note">Na primeira vez, o Google vai pedir autorização de acesso à planilha.</div>
+    <div class="col-strip">
+      <div class="col-item"><div class="col-dot" style="background:#34a853"></div><span class="col-label-sm">Data</span></div>
+      <div class="col-item"><div class="col-dot" style="background:#4285f4"></div><span class="col-label-sm">Local</span></div>
+      <div class="col-item"><div class="col-dot" style="background:#fbbc04"></div><span class="col-label-sm">Classificação</span></div>
+      <div class="col-item"><div class="col-dot" style="background:#ea4335"></div><span class="col-label-sm">Valor (R$)</span></div>
     </div>
+
+    <div class="import-btn-row">
+      <button class="btn-clear-imp" onclick="clearImport()">Limpar</button>
+      <button class="btn-send-imp" id="btnSend" onclick="handleSend()" disabled>Enviar para Sheets →</button>
+    </div>
+
+    <div class="import-footer">Na primeira vez, o Google vai pedir autorização de acesso à planilha.</div>
   </div>
 
-  <script>
-    const CLIENT_ID     = "1007458849107-8a01bj9u3r1o0nc7ln51nkuepmke7ba0.apps.googleusercontent.com";
-    const SPREADSHEET_ID = "1-K3FWcx-PhAB0asfwjrSGntrz1hgnzzCtzQA8DBnaYM";
-    const SHEET_NAME    = "DB Monthly Expenses";
-    const SCOPES        = "https://www.googleapis.com/auth/spreadsheets";
+<script>
+  // ── CONFIG ──
+  const CLIENT_ID      = "1007458849107-8a01bj9u3r1o0nc7ln51nkuepmke7ba0.apps.googleusercontent.com";
+  const SPREADSHEET_ID = "1-K3FWcx-PhAB0asfwjrSGntrz1hgnzzCtzQA8DBnaYM";
+  const SHEET_RO       = "https://www.googleapis.com/auth/spreadsheets.readonly";
+  const SHEET_RW       = "https://www.googleapis.com/auth/spreadsheets";
+  const DB_SHEET       = "DB Monthly Expenses";
 
-    let accessToken = null;
+  let accessToken = null;
+  let budget = parseFloat(localStorage.getItem("expense_budget") || "8000");
 
-    function onTsvChange() {
-      const val = document.getElementById("tsvInput").value.trim();
-      const lines = val ? val.split("\n").filter(l => l.trim()).length : 0;
-      const countEl = document.getElementById("lineCount");
-      const btnSend = document.getElementById("btnSend");
+  // ── INIT ──
+  document.getElementById("budgetInput").value = budget;
+  const now = new Date();
+  document.getElementById("selMonth").value = now.getMonth() + 1;
+  const selYear = document.getElementById("selYear");
+  for (let y = now.getFullYear(); y >= 2023; y--) {
+    const o = document.createElement("option");
+    o.value = y; o.textContent = y;
+    selYear.appendChild(o);
+  }
 
-      if (lines > 0) {
-        countEl.style.display = "inline";
-        countEl.textContent = lines + " linha" + (lines !== 1 ? "s" : "");
-        btnSend.disabled = false;
-      } else {
-        countEl.style.display = "none";
-        btnSend.disabled = true;
-      }
+  // ── DRAWER ──
+  function toggleDrawer() {
+    const open = document.getElementById("drawer").classList.toggle("open");
+    document.getElementById("overlay").classList.toggle("visible", open);
+    document.getElementById("hamburger").classList.toggle("open", open);
+  }
+
+  function closeDrawer() {
+    document.getElementById("drawer").classList.remove("open");
+    document.getElementById("overlay").classList.remove("visible");
+    document.getElementById("hamburger").classList.remove("open");
+  }
+
+  // ── PAGE NAV ──
+  const pageLabels = { dashboard: "Dashboard", import: "Importar Extrato" };
+
+  function switchPage(name) {
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.querySelectorAll(".drawer-item").forEach(b => b.classList.remove("active"));
+    document.getElementById("page-" + name).classList.add("active");
+    document.getElementById("di-" + name).classList.add("active");
+    document.getElementById("topbarPage").textContent = pageLabels[name];
+    closeDrawer();
+  }
+
+  // ── AUTH ──
+  function loadGsi() {
+    return new Promise(resolve => {
+      if (window.google?.accounts?.oauth2) return resolve();
+      const s = document.createElement("script");
+      s.src = "https://accounts.google.com/gsi/client";
+      s.onload = resolve;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function getToken(scope) {
+    await loadGsi();
+    return new Promise((resolve, reject) => {
+      google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID, scope,
+        callback: r => r.error ? reject(new Error(r.error)) : (accessToken = r.access_token, resolve(r.access_token))
+      }).requestAccessToken({ prompt: accessToken ? "" : "consent" });
+    });
+  }
+
+  async function fetchRange(token, range) {
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`,
+      { headers: { Authorization: "Bearer " + token } }
+    );
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.values || [];
+  }
+
+  function showStatus(id, msg, type) {
+    const el = document.getElementById(id);
+    el.style.display = "block";
+    el.style.color = type === "error" ? "var(--red)" : type === "ok" ? "var(--green)" : "var(--muted)";
+    el.textContent = type === "loading" ? "⏳ " + msg : type === "ok" ? "✓ " + msg : "✕ " + msg;
+  }
+
+  // ════════════════════════════════
+  // DASHBOARD
+  // ════════════════════════════════
+  function saveBudget() {
+    budget = parseFloat(document.getElementById("budgetInput").value) || 8000;
+    localStorage.setItem("expense_budget", budget);
+    showStatus("dashStatus", "Orçamento salvo: " + fmt(budget), "ok");
+  }
+
+  async function loadDashboard() {
+    const btn = document.getElementById("btnLoad");
+    btn.disabled = true; btn.textContent = "Carregando...";
+    showStatus("dashStatus", "Conectando ao Google...", "loading");
+    try {
+      const token = await getToken(SHEET_RO);
+      showStatus("dashStatus", "Lendo planilha...", "loading");
+      const rows  = await fetchRange(token, DB_SHEET + "!A:E");
+      const month = parseInt(document.getElementById("selMonth").value);
+      const year  = parseInt(document.getElementById("selYear").value);
+      const txs = rows.filter(r => {
+        if (!r[0] || r[0] === "Data") return false;
+        const d = parseSheetDate(r[0]);
+        if (!d) return false;
+        if (d.getMonth() + 1 !== month || d.getFullYear() !== year) return false;
+        const ex = (r[4] || "").toString().toUpperCase();
+        return ex !== "TRUE" && ex !== "VERDADEIRO";
+      }).map(r => ({ date: parseSheetDate(r[0]), local: r[1]||"", cat: r[2]||"", value: parseValue(r[3]||"0") }));
+      renderDashboard(txs, month, year);
+      showStatus("dashStatus", `${txs.length} transações — ${monthName(month)}/${year}`, "ok");
+      document.getElementById("lastUpdate").textContent = "Atualizado em " + new Date().toLocaleString("pt-BR");
+    } catch(e) {
+      showStatus("dashStatus", "Erro: " + e.message, "error");
+    } finally {
+      btn.disabled = false; btn.textContent = "Carregar";
     }
+  }
 
-    function parseTsv(raw) {
-      return raw.trim().split("\n")
-        .map(line => line.split("\t").map(c => c.trim()))
-        .filter(row => row.some(c => c !== ""));
-    }
+  function renderDashboard(txs, month, year) {
+    const totalSpent = txs.reduce((s,t) => s + t.value, 0);
+    const remaining  = budget - totalSpent;
+    const today      = new Date();
+    const lastDay    = new Date(year, month, 0);
+    const daysLeft   = Math.max(1, Math.ceil((lastDay - today) / 86400000) + 1);
+    const perDay     = remaining / daysLeft;
+    const pct        = Math.min(100, (totalSpent / budget) * 100);
 
-    function showStatus(type, text) {
-      const el = document.getElementById("statusMsg");
-      const icon = document.getElementById("statusIcon");
-      const msg  = document.getElementById("statusText");
-      el.className = "status-msg " + type;
-      el.style.display = "flex";
-      icon.textContent = type === "success" ? "✓" : "✕";
-      msg.textContent  = text;
-    }
+    document.getElementById("kpiBudget").textContent    = fmt(budget);
+    document.getElementById("kpiSpent").textContent     = fmt(totalSpent);
+    document.getElementById("kpiSpentSub").textContent  = pct.toFixed(1) + "% do orçamento";
+    document.getElementById("kpiRemaining").textContent = fmt(remaining);
+    document.getElementById("kpiPerDay").textContent    = fmt(perDay);
+    document.getElementById("kpiPerDaySub").textContent = daysLeft + " dias restantes";
 
-    function hideStatus() {
-      document.getElementById("statusMsg").style.display = "none";
-    }
+    document.getElementById("kpiSpent").className     = "kpi-value " + (pct > 90 ? "neg" : pct > 70 ? "warn" : "");
+    document.getElementById("kpiRemaining").className = "kpi-value " + (remaining < 0 ? "neg" : remaining < budget * 0.2 ? "warn" : "good");
+    document.getElementById("kpiPerDay").className    = "kpi-value " + (perDay < 0 ? "neg" : perDay < 100 ? "warn" : "good");
 
-    function handleClear() {
-      document.getElementById("tsvInput").value = "";
-      document.getElementById("btnSend").disabled = true;
-      document.getElementById("lineCount").style.display = "none";
-      hideStatus();
-      accessToken = null;
-    }
+    document.getElementById("progressPct").textContent = pct.toFixed(1) + "%";
+    const fill = document.getElementById("progressFill");
+    fill.style.width = pct + "%";
+    fill.className = "progress-bar-fill" + (pct > 90 ? " danger" : pct > 70 ? " warn" : "");
 
-    async function findLastRow(token) {
-      const range = encodeURIComponent(SHEET_NAME + "!A:A");
-      const res = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}`,
-        { headers: { Authorization: "Bearer " + token } }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.values ? data.values.length : 1;
-    }
+    renderWeekly(buildWeeks(txs, month, year));
+    renderDaily(buildDays(txs));
+  }
 
-    async function appendRows(token, rows) {
-      const lastRow  = await findLastRow(token);
-      const startRow = lastRow + 1;
-      const range    = encodeURIComponent(SHEET_NAME + "!A" + startRow);
-      const res = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
-        {
-          method: "PUT",
-          headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-          body: JSON.stringify({ values: rows })
-        }
-      );
-      const data = await res.json();
-      if (data.error) throw new Error(data.error.message);
-      return data.updatedRows || rows.length;
-    }
+  function getMondayOfWeek(date) {
+    const d = new Date(date);
+    const dow = d.getDay();
+    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+    d.setHours(0,0,0,0);
+    return d;
+  }
 
-    async function handleSend() {
-      const raw = document.getElementById("tsvInput").value;
-      if (!raw.trim()) { showStatus("error", "Cole o bloco TSV antes de enviar."); return; }
+  function buildWeeks(txs, month, year) {
+    const firstDay = new Date(year, month-1, 1);
+    const lastDay  = new Date(year, month, 0); lastDay.setHours(23,59,59,999);
+    const set = new Set();
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1))
+      set.add(getMondayOfWeek(d).getTime());
+    const monthStart = new Date(year, month-1, 1);
+    const monthEnd   = new Date(lastDay);
+    return Array.from(set).sort((a,b)=>a-b).map(ts => {
+      const ws = new Date(ts), we = new Date(ts);
+      we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+      const total = txs.filter(t => t.date >= ws && t.date <= we && t.date >= monthStart && t.date <= monthEnd)
+                       .reduce((s,t) => s+t.value, 0);
+      const ds = ws < monthStart ? monthStart : ws;
+      const de = we > monthEnd   ? monthEnd   : we;
+      return { label: fmtDate(ds) + " – " + fmtDate(de), total };
+    });
+  }
 
-      const rows = parseTsv(raw);
-      if (!rows.length) { showStatus("error", "Nenhuma linha válida encontrada."); return; }
+  function buildDays(txs) {
+    const map = {};
+    txs.forEach(t => { const k = fmtDate(t.date); map[k] = (map[k]||0) + t.value; });
+    return Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
+  }
 
-      const btn = document.getElementById("btnSend");
+  function renderWeekly(weeks) {
+    const tb = document.getElementById("weeklyBody");
+    if (!weeks.length) { tb.innerHTML = '<tr><td colspan="2" class="empty">Sem dados.</td></tr>'; return; }
+    const total = weeks.reduce((s,w) => s+w.total, 0);
+    tb.innerHTML = weeks.map((w,i) =>
+      `<tr><td>Semana ${i+1} <span style="color:var(--muted);font-size:11px">(${w.label})</span></td><td class="r">${fmt(w.total)}</td></tr>`
+    ).join("") + `<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
+  }
+
+  function renderDaily(days) {
+    const tb = document.getElementById("dailyBody");
+    if (!days.length) { tb.innerHTML = '<tr><td colspan="2" class="empty">Sem dados.</td></tr>'; return; }
+    const total = days.reduce((s,d) => s+d[1], 0);
+    tb.innerHTML = days.map(([date,val]) =>
+      `<tr><td>${date}</td><td class="r">${fmt(val)}</td></tr>`
+    ).join("") + `<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
+  }
+
+  // ════════════════════════════════
+  // IMPORT
+  // ════════════════════════════════
+  function onTsvChange() {
+    const val   = document.getElementById("tsvInput").value.trim();
+    const lines = val ? val.split("\n").filter(l => l.trim()).length : 0;
+    const badge = document.getElementById("lineBadge");
+    const btn   = document.getElementById("btnSend");
+    if (lines > 0) {
+      badge.style.display = "inline";
+      badge.textContent = lines + " linha" + (lines !== 1 ? "s" : "");
+      btn.disabled = false;
+    } else {
+      badge.style.display = "none";
       btn.disabled = true;
-      btn.textContent = "🔐 Autorizando...";
-      hideStatus();
-
-      try {
-        await new Promise((resolve, reject) => {
-          const tc = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
-            callback: (resp) => {
-              if (resp.error) reject(new Error(resp.error));
-              else { accessToken = resp.access_token; resolve(); }
-            }
-          });
-          tc.requestAccessToken({ prompt: accessToken ? "" : "consent" });
-        });
-
-        btn.textContent = "⏳ Enviando...";
-        const inserted = await appendRows(accessToken, rows);
-        showStatus("success", inserted + " linha(s) inserida(s) com sucesso abaixo do último lançamento.");
-        document.getElementById("tsvInput").value = "";
-        document.getElementById("lineCount").style.display = "none";
-      } catch(err) {
-        showStatus("error", "Erro: " + err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Enviar para Sheets →";
-      }
     }
-  </script>
+  }
+
+  function clearImport() {
+    document.getElementById("tsvInput").value = "";
+    document.getElementById("btnSend").disabled = true;
+    document.getElementById("lineBadge").style.display = "none";
+    document.getElementById("importStatus").style.display = "none";
+  }
+
+  function parseTsv(raw) {
+    return raw.trim().split("\n")
+      .map(l => l.split("\t").map(c => c.trim()))
+      .filter(r => r.some(c => c !== ""));
+  }
+
+  async function findLastRow(token) {
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(DB_SHEET + "!A:A")}`,
+      { headers: { Authorization: "Bearer " + token } }
+    );
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.values ? d.values.length : 1;
+  }
+
+  async function appendRows(token, rows) {
+    const lastRow = await findLastRow(token);
+    const range   = encodeURIComponent(DB_SHEET + "!A" + (lastRow + 1));
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+      {
+        method: "PUT",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify({ values: rows })
+      }
+    );
+    const d = await res.json();
+    if (d.error) throw new Error(d.error.message);
+    return d.updatedRows || rows.length;
+  }
+
+  async function handleSend() {
+    const raw = document.getElementById("tsvInput").value;
+    if (!raw.trim()) { showStatus("importStatus", "Cole o bloco TSV antes de enviar.", "error"); return; }
+    const rows = parseTsv(raw);
+    if (!rows.length) { showStatus("importStatus", "Nenhuma linha válida encontrada.", "error"); return; }
+    const btn = document.getElementById("btnSend");
+    btn.disabled = true; btn.textContent = "🔐 Autorizando...";
+    try {
+      const token = await getToken(SHEET_RW);
+      btn.textContent = "⏳ Enviando...";
+      const inserted = await appendRows(token, rows);
+      showStatus("importStatus", inserted + " linha(s) inserida(s) com sucesso!", "ok");
+      document.getElementById("tsvInput").value = "";
+      document.getElementById("lineBadge").style.display = "none";
+    } catch(e) {
+      showStatus("importStatus", "Erro: " + e.message, "error");
+    } finally {
+      btn.disabled = false; btn.textContent = "Enviar para Sheets →";
+    }
+  }
+
+  // ── HELPERS ──
+  function parseSheetDate(val) {
+    if (!val) return null;
+    const m = String(val).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3], +m[2]-1, +m[1]);
+    const n = parseFloat(val);
+    if (!isNaN(n) && n > 1000) {
+      const d = new Date(1899, 11, 30);
+      d.setDate(d.getDate() + Math.floor(n));
+      return d;
+    }
+    return null;
+  }
+
+  function parseValue(val) {
+    if (typeof val === "number") return val;
+    return parseFloat(String(val).replace("R$","").replace(/\./g,"").replace(",",".").trim()) || 0;
+  }
+
+  function fmt(n) {
+    return "R$ " + Math.abs(n).toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" });
+  }
+
+  function monthName(m) {
+    return ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m-1];
+  }
+</script>
 </body>
 </html>
