@@ -7,510 +7,169 @@
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0b0d14;
-      --surface: #13151f;
-      --surface2: #1a1d2b;
-      --border: #22253a;
-      --text: #e8eaf6;
-      --muted: #4a4f6e;
-      --accent: #6c8ef5;
-      --green: #34c97a;
-      --yellow: #f5a623;
-      --red: #f5524a;
-      --topbar-h: 56px;
-      --drawer-w: 260px;
-      --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+      --bg:#0b0d14; --surface:#13151f; --surface2:#1a1d2b;
+      --border:#22253a; --text:#e8eaf6; --muted:#4a4f6e;
+      --accent:#6c8ef5; --green:#34c97a; --yellow:#f5a623; --red:#f5524a;
+      --topbar-h:56px; --drawer-w:260px;
+      --font-mono:'JetBrains Mono','Fira Code',monospace;
     }
-
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', 'Segoe UI', sans-serif;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-
-    /* ══════════════════════════════
-       TOPBAR
-    ══════════════════════════════ */
-    .topbar {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      height: var(--topbar-h);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      gap: 12px;
-      z-index: 200;
-    }
-
-    .hamburger {
-      width: 36px; height: 36px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      border-radius: 8px;
-      transition: background 0.15s;
-      flex-shrink: 0;
-    }
-
-    .hamburger:hover { background: var(--surface2); }
-
-    .hamburger span {
-      display: block;
-      width: 20px; height: 2px;
-      background: var(--text);
-      border-radius: 2px;
-      transition: all 0.25s;
-      transform-origin: center;
-    }
-
-    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    .topbar-title {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      color: var(--text);
-      flex: 1;
-    }
-
-    .topbar-title span { color: var(--accent); }
-
-    .topbar-page {
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* ══════════════════════════════
-       DRAWER OVERLAY
-    ══════════════════════════════ */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(2px);
-      z-index: 300;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s;
-    }
-
-    .overlay.visible { opacity: 1; pointer-events: all; }
-
-    /* ══════════════════════════════
-       DRAWER
-    ══════════════════════════════ */
-    .drawer {
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      width: var(--drawer-w);
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      z-index: 400;
-      transform: translateX(calc(-1 * var(--drawer-w)));
-      transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex;
-      flex-direction: column;
-      padding-top: env(safe-area-inset-top);
-    }
-
-    .drawer.open { transform: translateX(0); }
-
-    .drawer-header {
-      padding: 20px 20px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .drawer-logo {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--text);
-      margin-bottom: 2px;
-    }
-
-    .drawer-logo span { color: var(--accent); }
-
-    .drawer-sub {
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    .drawer-nav {
-      flex: 1;
-      padding: 12px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .drawer-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 11px 14px;
-      border-radius: 10px;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 14px;
-      color: var(--muted);
-      transition: all 0.15s;
-      width: 100%;
-      text-align: left;
-    }
-
-    .drawer-item:hover { background: var(--surface2); color: var(--text); }
-
-    .drawer-item.active {
-      background: rgba(108, 142, 245, 0.12);
-      color: var(--accent);
-    }
-
-    .drawer-item .di-icon { font-size: 18px; flex-shrink: 0; }
-
-    .drawer-item .di-label { font-weight: 500; }
-
-    .drawer-item .di-desc {
-      font-size: 11px;
-      color: var(--muted);
-      margin-top: 1px;
-    }
-
-    .drawer-item.active .di-desc { color: rgba(108,142,245,0.6); }
-
-    .drawer-divider {
-      height: 1px;
-      background: var(--border);
-      margin: 8px 10px;
-    }
-
-    .drawer-footer {
-      padding: 16px 20px;
-      border-top: 1px solid var(--border);
-      font-size: 11px;
-      color: var(--muted);
-    }
-
-    /* ══════════════════════════════
-       PAGES
-    ══════════════════════════════ */
-    .page { display: none; padding: 20px 16px; margin-top: var(--topbar-h); }
-    .page.active { display: block; }
-
-    /* ══════════════════════════════
-       SHARED COMPONENTS
-    ══════════════════════════════ */
-    .page-title {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.4px;
-      color: var(--text);
-      margin-bottom: 20px;
-    }
-
-    .page-title span { color: var(--accent); }
-
-    .status-bar {
-      display: none;
-      padding: 10px 14px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-      background: var(--surface2);
-    }
-
-    select, input[type="number"] {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 13px;
-      padding: 8px 12px;
-      outline: none;
-      cursor: pointer;
-      transition: border-color 0.15s;
-      -webkit-appearance: none;
-    }
-
-    select:focus, input[type="number"]:focus { border-color: var(--accent); }
-
-    .btn {
-      padding: 9px 18px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.15s;
-      font-family: inherit;
-    }
-
-    .btn-primary { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #5a7ef0; }
-    .btn-primary:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
-
-    .section-title {
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 20px;
-    }
-
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
-    thead th {
-      background: var(--surface2);
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 10px 14px;
-      text-align: left;
-      border-bottom: 1px solid var(--border);
-    }
-
-    thead th.r { text-align: right; }
-    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--surface2); }
-    tbody td { padding: 10px 14px; color: var(--text); }
-    tbody td.r { text-align: right; font-family: var(--font-mono); font-size: 12px; }
-
-    .total-row td {
-      background: var(--surface2);
-      font-weight: 600;
-      border-top: 1px solid var(--border);
-      color: var(--accent);
-      font-family: var(--font-mono);
-      font-size: 13px;
-    }
-
-    .empty { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
-
-    /* ══════════════════════════════
-       DASHBOARD
-    ══════════════════════════════ */
-    .controls-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-      align-items: center;
-    }
-
-    .budget-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .budget-row label { color: var(--muted); font-size: 12px; }
-
-    .budget-input-wrap {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 12px;
-    }
-
-    .budget-prefix { color: var(--muted); font-size: 12px; font-family: var(--font-mono); }
-
-    #budgetInput {
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 14px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      width: 90px;
-      outline: none;
-    }
-
-    .btn-ghost {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--accent);
-      font-size: 11px;
-      padding: 5px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-
-    .btn-ghost:hover { border-color: var(--accent); }
-
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    .kpi-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .kpi-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-    }
-
-    .kpi-card.blue::before   { background: var(--accent); }
-    .kpi-card.green::before  { background: var(--green); }
-    .kpi-card.yellow::before { background: var(--yellow); }
-    .kpi-card.red::before    { background: var(--red); }
-
-    .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-    .kpi-value { font-size: 18px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -0.5px; color: var(--text); }
-    .kpi-value.neg  { color: var(--red); }
-    .kpi-value.warn { color: var(--yellow); }
-    .kpi-value.good { color: var(--green); }
-    .kpi-sub { font-size: 10px; color: var(--muted); margin-top: 3px; }
-
-    .progress-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px 16px;
-      margin-bottom: 20px;
-    }
-
-    .progress-header { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 10px; }
-    .progress-bar-bg { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
-    .progress-bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; background: var(--green); }
-    .progress-bar-fill.warn   { background: var(--yellow); }
-    .progress-bar-fill.danger { background: var(--red); }
-
-    /* ══════════════════════════════
-       IMPORT
-    ══════════════════════════════ */
-    .import-label-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .line-badge {
-      background: var(--surface2);
-      color: var(--muted);
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-    }
-
-    textarea {
-      width: 100%;
-      height: 200px;
-      background: #12141e;
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      color: #c8cde8;
-      font-size: 12px;
-      font-family: var(--font-mono);
-      padding: 14px;
-      resize: vertical;
-      outline: none;
-      line-height: 1.6;
-      transition: border-color 0.2s;
-    }
-
-    textarea:focus { border-color: var(--accent); }
-
-    .col-strip {
-      margin-top: 10px;
-      padding: 10px 14px;
-      background: #12141e;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      display: flex;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-
-    .col-item { display: flex; align-items: center; gap: 5px; }
-    .col-dot  { width: 6px; height: 6px; border-radius: 50%; }
-    .col-label-sm { color: var(--muted); font-size: 11px; }
-
-    .import-btn-row { display: flex; gap: 10px; margin-top: 16px; }
-
-    .btn-clear-imp {
-      flex: 0 0 auto;
-      padding: 11px 18px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 13px;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-
-    .btn-clear-imp:hover { border-color: #3a3d4a; color: var(--text); }
-
-    .btn-send-imp {
-      flex: 1;
-      padding: 11px 18px;
-      background: linear-gradient(135deg, #34a853, #1a8a3c);
-      border: none;
-      border-radius: 8px;
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: inherit;
-      transition: all 0.15s;
-    }
-
-    .btn-send-imp:disabled { background: var(--surface2); color: var(--muted); cursor: not-allowed; }
-
-    .import-footer { margin-top: 14px; color: var(--muted); font-size: 11px; text-align: center; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter','Segoe UI',sans-serif; min-height:100vh; overflow-x:hidden; }
+
+    /* ── TOPBAR ── */
+    .topbar { position:fixed; top:0; left:0; right:0; height:var(--topbar-h); background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 16px; gap:12px; z-index:200; }
+    .hamburger { width:36px; height:36px; border:none; background:none; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; border-radius:8px; transition:background 0.15s; flex-shrink:0; }
+    .hamburger:hover { background:var(--surface2); }
+    .hamburger span { display:block; width:20px; height:2px; background:var(--text); border-radius:2px; transition:all 0.25s; transform-origin:center; }
+    .hamburger.open span:nth-child(1) { transform:translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity:0; transform:scaleX(0); }
+    .hamburger.open span:nth-child(3) { transform:translateY(-7px) rotate(-45deg); }
+    .topbar-title { font-size:16px; font-weight:700; letter-spacing:-0.3px; color:var(--text); flex:1; }
+    .topbar-title span { color:var(--accent); }
+    .topbar-page { font-size:12px; color:var(--muted); }
+
+    /* ── OVERLAY ── */
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(2px); z-index:300; opacity:0; pointer-events:none; transition:opacity 0.25s; }
+    .overlay.visible { opacity:1; pointer-events:all; }
+
+    /* ── DRAWER ── */
+    .drawer { position:fixed; top:0; left:0; bottom:0; width:var(--drawer-w); background:var(--surface); border-right:1px solid var(--border); z-index:400; transform:translateX(calc(-1 * var(--drawer-w))); transition:transform 0.28s cubic-bezier(0.4,0,0.2,1); display:flex; flex-direction:column; }
+    .drawer.open { transform:translateX(0); }
+    .drawer-header { padding:20px 20px 16px; border-bottom:1px solid var(--border); }
+    .drawer-logo { font-size:20px; font-weight:800; letter-spacing:-0.5px; color:var(--text); margin-bottom:2px; }
+    .drawer-logo span { color:var(--accent); }
+    .drawer-sub { font-size:11px; color:var(--muted); }
+    .drawer-nav { flex:1; padding:12px 10px; display:flex; flex-direction:column; gap:4px; }
+    .drawer-item { display:flex; align-items:center; gap:12px; padding:11px 14px; border-radius:10px; border:none; background:none; cursor:pointer; font-family:inherit; font-size:14px; color:var(--muted); transition:all 0.15s; width:100%; text-align:left; }
+    .drawer-item:hover { background:var(--surface2); color:var(--text); }
+    .drawer-item.active { background:rgba(108,142,245,0.12); color:var(--accent); }
+    .drawer-item .di-icon { font-size:18px; flex-shrink:0; }
+    .drawer-item .di-label { font-weight:500; }
+    .drawer-item .di-desc { font-size:11px; color:var(--muted); margin-top:1px; }
+    .drawer-item.active .di-desc { color:rgba(108,142,245,0.6); }
+    .drawer-divider { height:1px; background:var(--border); margin:8px 10px; }
+    .drawer-footer { padding:16px 20px; border-top:1px solid var(--border); font-size:11px; color:var(--muted); }
+
+    /* ── PAGES ── */
+    .page { display:none; padding:20px 16px; margin-top:var(--topbar-h); padding-bottom:32px; }
+    .page.active { display:block; }
+
+    /* ── SHARED ── */
+    .page-title { font-size:18px; font-weight:700; letter-spacing:-0.4px; color:var(--text); margin-bottom:20px; }
+    .page-title span { color:var(--accent); }
+    .status-bar { display:none; padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; border:1px solid var(--border); background:var(--surface2); }
+    select, input[type="number"], input[type="text"] { background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--text); font-size:13px; padding:8px 12px; outline:none; cursor:pointer; transition:border-color 0.15s; -webkit-appearance:none; font-family:inherit; }
+    select:focus, input[type="number"]:focus, input[type="text"]:focus { border-color:var(--accent); }
+    .btn { padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.15s; font-family:inherit; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { background:#5a7ef0; }
+    .btn-primary:disabled { background:var(--surface2); color:var(--muted); cursor:not-allowed; }
+    .section-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.8px; color:var(--muted); margin-bottom:10px; }
+    .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; margin-bottom:20px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead th { background:var(--surface2); color:var(--muted); font-size:11px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; padding:10px 14px; text-align:left; border-bottom:1px solid var(--border); }
+    thead th.r { text-align:right; }
+    tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--surface2); }
+    tbody td { padding:10px 14px; color:var(--text); vertical-align:middle; }
+    tbody td.r { text-align:right; font-family:var(--font-mono); font-size:12px; }
+    .total-row td { background:var(--surface2); font-weight:600; border-top:1px solid var(--border); color:var(--accent); font-family:var(--font-mono); font-size:13px; }
+    .empty { text-align:center; padding:32px; color:var(--muted); font-size:13px; }
+
+    /* ── DASHBOARD ── */
+    .controls-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+    .budget-row { display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .budget-row label { color:var(--muted); font-size:12px; }
+    .budget-input-wrap { display:flex; align-items:center; gap:6px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 12px; }
+    .budget-prefix { color:var(--muted); font-size:12px; font-family:var(--font-mono); }
+    #budgetInput { background:transparent; border:none; color:var(--text); font-size:14px; font-family:var(--font-mono); font-weight:600; width:90px; outline:none; }
+    .btn-ghost { background:var(--surface2); border:1px solid var(--border); color:var(--accent); font-size:11px; padding:5px 12px; border-radius:6px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+    .btn-ghost:hover { border-color:var(--accent); }
+    .kpi-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:20px; }
+    .kpi-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; position:relative; overflow:hidden; }
+    .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; }
+    .kpi-card.blue::before { background:var(--accent); } .kpi-card.green::before { background:var(--green); }
+    .kpi-card.yellow::before { background:var(--yellow); } .kpi-card.red::before { background:var(--red); }
+    .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; margin-bottom:6px; }
+    .kpi-value { font-size:18px; font-weight:700; font-family:var(--font-mono); letter-spacing:-0.5px; color:var(--text); }
+    .kpi-value.neg { color:var(--red); } .kpi-value.warn { color:var(--yellow); } .kpi-value.good { color:var(--green); }
+    .kpi-sub { font-size:10px; color:var(--muted); margin-top:3px; }
+    .progress-wrap { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:20px; }
+    .progress-header { display:flex; justify-content:space-between; font-size:12px; color:var(--muted); margin-bottom:10px; }
+    .progress-bar-bg { height:6px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .progress-bar-fill { height:100%; border-radius:99px; transition:width 0.6s ease; background:var(--green); }
+    .progress-bar-fill.warn { background:var(--yellow); } .progress-bar-fill.danger { background:var(--red); }
+
+    /* ── DATABASE ── */
+    .db-toolbar { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; align-items:center; }
+    .db-filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; align-items:center; }
+    .db-filters select { flex:1; min-width:120px; }
+    .db-filters input[type="text"] { flex:2; min-width:140px; }
+    .db-filters input[type="date"] { flex:1; min-width:130px; color-scheme:dark; }
+
+    /* mode toggle */
+    .mode-toggle { display:flex; gap:6px; }
+    .btn-mode { padding:7px 14px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-family:inherit; transition:all 0.15s; }
+    .btn-mode.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
+    .db-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:20px; }
+    .db-table { width:100%; border-collapse:collapse; font-size:12px; min-width:460px; }
+    .db-table thead th { background:var(--surface2); color:var(--muted); font-size:10px; font-weight:500; text-transform:uppercase; letter-spacing:0.5px; padding:10px 12px; text-align:left; border-bottom:1px solid var(--border); white-space:nowrap; }
+    .db-table thead th.r { text-align:right; }
+    .db-table tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
+    .db-table tbody tr:last-child { border-bottom:none; }
+    .db-table tbody tr:hover { background:var(--surface2); }
+    .db-table tbody td { padding:9px 12px; color:var(--text); vertical-align:middle; }
+    .db-table tbody td.r { text-align:right; font-family:var(--font-mono); font-size:11px; white-space:nowrap; }
+
+    /* cat select */
+    .cat-select { background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--text); font-size:12px; padding:5px 8px; outline:none; cursor:pointer; -webkit-appearance:none; width:100%; min-width:130px; transition:border-color 0.15s; font-family:inherit; }
+    .cat-select:focus { border-color:var(--accent); }
+    .cat-select.saving { border-color:var(--yellow); }
+    .cat-select.saved  { border-color:var(--green); }
+    .cat-new-input { background:var(--surface2); border:1px solid var(--accent); border-radius:6px; color:var(--text); font-size:12px; padding:5px 8px; outline:none; width:100%; min-width:130px; margin-top:4px; font-family:inherit; }
+
+    /* view mode badge */
+    .cat-badge { display:inline-block; font-size:11px; padding:3px 8px; border-radius:99px; background:var(--surface2); border:1px solid var(--border); color:var(--text); white-space:nowrap; }
+    .cat-badge.empty-badge { color:var(--muted); border-style:dashed; }
+
+    /* toggle */
+    .toggle-wrap { display:flex; align-items:center; justify-content:center; }
+    .toggle { position:relative; width:36px; height:20px; cursor:pointer; }
+    .toggle input { opacity:0; width:0; height:0; }
+    .toggle-track { position:absolute; inset:0; background:var(--border); border-radius:99px; transition:background 0.2s; }
+    .toggle input:checked + .toggle-track { background:var(--red); }
+    .toggle-thumb { position:absolute; top:3px; left:3px; width:14px; height:14px; background:#fff; border-radius:50%; transition:transform 0.2s; }
+    .toggle input:checked ~ .toggle-thumb { transform:translateX(16px); }
+    .excl-dot { width:8px; height:8px; border-radius:50%; display:inline-block; margin:auto; }
+
+    .saving-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--yellow); margin-left:6px; animation:pulse 0.8s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    /* db count */
+    .db-count { font-size:11px; color:var(--muted); margin-bottom:10px; }
+
+    /* ── IMPORT ── */
+    .import-label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .line-badge { background:var(--surface2); color:var(--muted); font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--border); }
+    textarea { width:100%; height:200px; background:#12141e; border:1px solid var(--border); border-radius:10px; color:#c8cde8; font-size:12px; font-family:var(--font-mono); padding:14px; resize:vertical; outline:none; line-height:1.6; transition:border-color 0.2s; }
+    textarea:focus { border-color:var(--accent); }
+    .col-strip { margin-top:10px; padding:10px 14px; background:#12141e; border-radius:8px; border:1px solid var(--border); display:flex; gap:14px; flex-wrap:wrap; }
+    .col-item { display:flex; align-items:center; gap:5px; }
+    .col-dot { width:6px; height:6px; border-radius:50%; }
+    .col-label-sm { color:var(--muted); font-size:11px; }
+    .import-btn-row { display:flex; gap:10px; margin-top:16px; }
+    .btn-clear-imp { flex:0 0 auto; padding:11px 18px; background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--muted); font-size:13px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+    .btn-clear-imp:hover { border-color:#3a3d4a; color:var(--text); }
+    .btn-send-imp { flex:1; padding:11px 18px; background:linear-gradient(135deg,#34a853,#1a8a3c); border:none; border-radius:8px; color:#fff; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+    .btn-send-imp:disabled { background:var(--surface2); color:var(--muted); cursor:not-allowed; }
+    .import-footer { margin-top:14px; color:var(--muted); font-size:11px; text-align:center; }
   </style>
 </head>
 <body>
 
-  <!-- ══ TOPBAR ══ -->
+  <!-- TOPBAR -->
   <header class="topbar">
     <button class="hamburger" id="hamburger" onclick="toggleDrawer()">
       <span></span><span></span><span></span>
@@ -519,197 +178,188 @@
     <div class="topbar-page" id="topbarPage">Dashboard</div>
   </header>
 
-  <!-- ══ OVERLAY ══ -->
+  <!-- OVERLAY -->
   <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
 
-  <!-- ══ DRAWER ══ -->
+  <!-- DRAWER -->
   <nav class="drawer" id="drawer">
     <div class="drawer-header">
       <div class="drawer-logo">💳 <span>Expense</span></div>
       <div class="drawer-sub">Gestão de gastos pessoais</div>
     </div>
-
     <div class="drawer-nav">
       <button class="drawer-item active" id="di-dashboard" onclick="switchPage('dashboard')">
         <span class="di-icon">📊</span>
-        <div>
-          <div class="di-label">Dashboard</div>
-          <div class="di-desc">Resumo mensal e análises</div>
-        </div>
+        <div><div class="di-label">Dashboard</div><div class="di-desc">Resumo mensal e análises</div></div>
       </button>
-
       <div class="drawer-divider"></div>
-
+      <button class="drawer-item" id="di-database" onclick="switchPage('database')">
+        <span class="di-icon">🗄️</span>
+        <div><div class="di-label">Banco de Dados</div><div class="di-desc">Visualizar e editar transações</div></div>
+      </button>
+      <div class="drawer-divider"></div>
       <button class="drawer-item" id="di-import" onclick="switchPage('import')">
         <span class="di-icon">📥</span>
-        <div>
-          <div class="di-label">Importar Extrato</div>
-          <div class="di-desc">Cole o TSV do agente</div>
-        </div>
+        <div><div class="di-label">Importar Extrato</div><div class="di-desc">Cole o TSV do agente</div></div>
       </button>
     </div>
-
-    <div class="drawer-footer">
-      DB Monthly Expenses · Google Sheets
-    </div>
+    <div class="drawer-footer">DB Monthly Expenses · Google Sheets</div>
   </nav>
 
-  <!-- ══ PAGE: DASHBOARD ══ -->
+  <!-- PAGE: DASHBOARD -->
   <div class="page active" id="page-dashboard">
     <div class="page-title">📊 <span>Dashboard</span></div>
-
     <div class="controls-row">
       <select id="selMonth">
-        <option value="1">Janeiro</option><option value="2">Fevereiro</option>
-        <option value="3">Março</option><option value="4">Abril</option>
-        <option value="5">Maio</option><option value="6">Junho</option>
-        <option value="7">Julho</option><option value="8">Agosto</option>
-        <option value="9">Setembro</option><option value="10">Outubro</option>
-        <option value="11">Novembro</option><option value="12">Dezembro</option>
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
       </select>
       <select id="selYear"></select>
       <button class="btn btn-primary" id="btnLoad" onclick="loadDashboard()">Carregar</button>
     </div>
-
     <div class="budget-row">
       <label>Orçamento:</label>
-      <div class="budget-input-wrap">
-        <span class="budget-prefix">R$</span>
-        <input type="number" id="budgetInput" value="8000" min="0" step="100"/>
-      </div>
+      <div class="budget-input-wrap"><span class="budget-prefix">R$</span><input type="number" id="budgetInput" value="8000" min="0" step="100"/></div>
       <button class="btn-ghost" onclick="saveBudget()">Salvar</button>
     </div>
-
     <div class="status-bar" id="dashStatus"></div>
-
     <div class="kpi-grid">
-      <div class="kpi-card blue">
-        <div class="kpi-label">Orçamento</div>
-        <div class="kpi-value" id="kpiBudget">—</div>
-        <div class="kpi-sub">limite mensal</div>
-      </div>
-      <div class="kpi-card red">
-        <div class="kpi-label">Gasto</div>
-        <div class="kpi-value" id="kpiSpent">—</div>
-        <div class="kpi-sub" id="kpiSpentSub">—</div>
-      </div>
-      <div class="kpi-card green">
-        <div class="kpi-label">Restante</div>
-        <div class="kpi-value" id="kpiRemaining">—</div>
-        <div class="kpi-sub">disponível</div>
-      </div>
-      <div class="kpi-card yellow">
-        <div class="kpi-label">Por dia</div>
-        <div class="kpi-value" id="kpiPerDay">—</div>
-        <div class="kpi-sub" id="kpiPerDaySub">—</div>
-      </div>
+      <div class="kpi-card blue"><div class="kpi-label">Orçamento</div><div class="kpi-value" id="kpiBudget">—</div><div class="kpi-sub">limite mensal</div></div>
+      <div class="kpi-card red"><div class="kpi-label">Gasto</div><div class="kpi-value" id="kpiSpent">—</div><div class="kpi-sub" id="kpiSpentSub">—</div></div>
+      <div class="kpi-card green"><div class="kpi-label">Restante</div><div class="kpi-value" id="kpiRemaining">—</div><div class="kpi-sub">disponível</div></div>
+      <div class="kpi-card yellow"><div class="kpi-label">Por dia</div><div class="kpi-value" id="kpiPerDay">—</div><div class="kpi-sub" id="kpiPerDaySub">—</div></div>
     </div>
-
     <div class="progress-wrap">
-      <div class="progress-header">
-        <span>Consumo do orçamento</span>
-        <span id="progressPct">—</span>
-      </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
-      </div>
+      <div class="progress-header"><span>Consumo do orçamento</span><span id="progressPct">—</span></div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
     </div>
-
     <div class="section-title">Gastos por semana</div>
     <div class="table-wrap">
-      <table>
-        <thead><tr><th>Semana</th><th class="r">Total (R$)</th></tr></thead>
-        <tbody id="weeklyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody>
-      </table>
+      <table><thead><tr><th>Semana</th><th class="r">Total (R$)</th></tr></thead><tbody id="weeklyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody></table>
     </div>
-
     <div class="section-title">Gastos por dia</div>
     <div class="table-wrap">
-      <table>
-        <thead><tr><th>Data</th><th class="r">Total (R$)</th></tr></thead>
-        <tbody id="dailyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody>
-      </table>
+      <table><thead><tr><th>Data</th><th class="r">Total (R$)</th></tr></thead><tbody id="dailyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody></table>
     </div>
-
-    <div style="color:var(--muted);font-size:11px;text-align:center;margin-top:8px;padding-bottom:24px" id="lastUpdate"></div>
+    <div style="color:var(--muted);font-size:11px;text-align:center;margin-top:8px" id="lastUpdate"></div>
   </div>
 
-  <!-- ══ PAGE: IMPORT ══ -->
+  <!-- PAGE: DATABASE -->
+  <div class="page" id="page-database">
+    <div class="page-title">🗄️ <span>Banco de</span> Dados</div>
+
+    <!-- Toolbar: month/year + mode toggle -->
+    <div class="db-toolbar">
+      <select id="dbSelMonth">
+        <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option><option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option><option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option><option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select id="dbSelYear"></select>
+      <button class="btn btn-primary" id="btnDbLoad" onclick="loadDatabase()">Carregar</button>
+      <div class="mode-toggle" style="margin-left:auto">
+        <button class="btn-mode" id="btnView" onclick="setMode('view')">👁 Ver</button>
+        <button class="btn-mode active" id="btnEdit" onclick="setMode('edit')">✏️ Editar</button>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="db-filters">
+      <input type="date" id="filterDate" onchange="applyFilters()" style="flex:1;min-width:130px"/>
+      <input type="text" id="filterLocal" placeholder="🔍 Local..." oninput="applyFilters()" style="flex:2;min-width:120px"/>
+      <select id="filterCat" onchange="applyFilters()" style="flex:1;min-width:130px">
+        <option value="">Todas as categorias</option>
+      </select>
+    </div>
+
+    <div class="status-bar" id="dbStatus"></div>
+    <div class="db-count" id="dbCount"></div>
+
+    <div class="db-scroll">
+      <table class="db-table">
+        <thead>
+          <tr>
+            <th>Data</th>
+            <th>Local</th>
+            <th>Classificação</th>
+            <th class="r">Valor</th>
+            <th style="text-align:center">Excluir</th>
+          </tr>
+        </thead>
+        <tbody id="dbBody"><tr><td colspan="5" class="empty">Carregue os dados.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PAGE: IMPORT -->
   <div class="page" id="page-import">
     <div class="page-title">📥 <span>Importar</span> Extrato</div>
-
     <div class="status-bar" id="importStatus"></div>
-
     <div class="import-label-row">
       <span class="section-title" style="margin:0">Bloco TSV</span>
       <span class="line-badge" id="lineBadge" style="display:none"></span>
     </div>
-
-    <textarea id="tsvInput"
-      placeholder="Cole aqui o bloco TSV gerado pelo agente...
+    <textarea id="tsvInput" placeholder="Cole aqui o bloco TSV gerado pelo agente...
 
 Ex:
-20/05/2025	Mercado Livre	Compras	R$ 89,90"
-      oninput="onTsvChange()"></textarea>
-
+20/05/2025	Mercado Livre	Compras	R$ 89,90" oninput="onTsvChange()"></textarea>
     <div class="col-strip">
       <div class="col-item"><div class="col-dot" style="background:#34a853"></div><span class="col-label-sm">Data</span></div>
       <div class="col-item"><div class="col-dot" style="background:#4285f4"></div><span class="col-label-sm">Local</span></div>
       <div class="col-item"><div class="col-dot" style="background:#fbbc04"></div><span class="col-label-sm">Classificação</span></div>
       <div class="col-item"><div class="col-dot" style="background:#ea4335"></div><span class="col-label-sm">Valor (R$)</span></div>
     </div>
-
     <div class="import-btn-row">
       <button class="btn-clear-imp" onclick="clearImport()">Limpar</button>
       <button class="btn-send-imp" id="btnSend" onclick="handleSend()" disabled>Enviar para Sheets →</button>
     </div>
-
     <div class="import-footer">Na primeira vez, o Google vai pedir autorização de acesso à planilha.</div>
   </div>
 
 <script>
-  // ── CONFIG ──
   const CLIENT_ID      = "1007458849107-8a01bj9u3r1o0nc7ln51nkuepmke7ba0.apps.googleusercontent.com";
   const SPREADSHEET_ID = "1-K3FWcx-PhAB0asfwjrSGntrz1hgnzzCtzQA8DBnaYM";
-  const SHEET_RO       = "https://www.googleapis.com/auth/spreadsheets.readonly";
-  const SHEET_RW       = "https://www.googleapis.com/auth/spreadsheets";
-  const DB_SHEET       = "DB Monthly Expenses";
+  const SHEET_RO = "https://www.googleapis.com/auth/spreadsheets.readonly";
+  const SHEET_RW = "https://www.googleapis.com/auth/spreadsheets";
+  const DB_SHEET = "DB Monthly Expenses";
+
+  const CATEGORIES = ["Açougue","Assinaturas","Cuidados pessoais","Farmácia","Hortifruti","Outros","Padaria","Restaurante","Supermercado","Suprimentos crianças","Suprimentos escritório","Transporte","Transporte funcionários","Lazer"];
 
   let accessToken = null;
   let budget = parseFloat(localStorage.getItem("expense_budget") || "8000");
+  let dbRows = [];
+  let dbMode = "edit"; // "view" | "edit"
+  let filteredIndices = [];
 
   // ── INIT ──
   document.getElementById("budgetInput").value = budget;
   const now = new Date();
-  document.getElementById("selMonth").value = now.getMonth() + 1;
-  const selYear = document.getElementById("selYear");
-  for (let y = now.getFullYear(); y >= 2023; y--) {
-    const o = document.createElement("option");
-    o.value = y; o.textContent = y;
-    selYear.appendChild(o);
-  }
+  ["selMonth","dbSelMonth"].forEach(id => document.getElementById(id).value = now.getMonth()+1);
+  ["selYear","dbSelYear"].forEach(id => {
+    for (let y = now.getFullYear(); y >= 2023; y--) {
+      const o = document.createElement("option"); o.value=y; o.textContent=y;
+      document.getElementById(id).appendChild(o);
+    }
+  });
+
+  // populate filter cat dropdown
+  const filterCat = document.getElementById("filterCat");
+  CATEGORIES.forEach(c => { const o=document.createElement("option"); o.value=c; o.textContent=c; filterCat.appendChild(o); });
 
   // ── DRAWER ──
+  const pageLabels = { dashboard:"Dashboard", database:"Banco de Dados", import:"Importar Extrato" };
   function toggleDrawer() {
     const open = document.getElementById("drawer").classList.toggle("open");
     document.getElementById("overlay").classList.toggle("visible", open);
     document.getElementById("hamburger").classList.toggle("open", open);
   }
-
   function closeDrawer() {
     document.getElementById("drawer").classList.remove("open");
     document.getElementById("overlay").classList.remove("visible");
     document.getElementById("hamburger").classList.remove("open");
   }
-
-  // ── PAGE NAV ──
-  const pageLabels = { dashboard: "Dashboard", import: "Importar Extrato" };
-
   function switchPage(name) {
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.querySelectorAll(".drawer-item").forEach(b => b.classList.remove("active"));
-    document.getElementById("page-" + name).classList.add("active");
-    document.getElementById("di-" + name).classList.add("active");
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.querySelectorAll(".drawer-item").forEach(b=>b.classList.remove("active"));
+    document.getElementById("page-"+name).classList.add("active");
+    document.getElementById("di-"+name).classList.add("active");
     document.getElementById("topbarPage").textContent = pageLabels[name];
     closeDrawer();
   }
@@ -718,265 +368,294 @@ Ex:
   function loadGsi() {
     return new Promise(resolve => {
       if (window.google?.accounts?.oauth2) return resolve();
-      const s = document.createElement("script");
-      s.src = "https://accounts.google.com/gsi/client";
-      s.onload = resolve;
-      document.head.appendChild(s);
+      const s=document.createElement("script"); s.src="https://accounts.google.com/gsi/client"; s.onload=resolve; document.head.appendChild(s);
     });
   }
-
   async function getToken(scope) {
     await loadGsi();
-    return new Promise((resolve, reject) => {
-      google.accounts.oauth2.initTokenClient({
-        client_id: CLIENT_ID, scope,
-        callback: r => r.error ? reject(new Error(r.error)) : (accessToken = r.access_token, resolve(r.access_token))
-      }).requestAccessToken({ prompt: accessToken ? "" : "consent" });
+    return new Promise((resolve,reject) => {
+      google.accounts.oauth2.initTokenClient({ client_id:CLIENT_ID, scope,
+        callback: r => r.error ? reject(new Error(r.error)) : (accessToken=r.access_token, resolve(r.access_token))
+      }).requestAccessToken({ prompt: accessToken?"":"consent" });
     });
   }
-
   async function fetchRange(token, range) {
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`,
-      { headers: { Authorization: "Bearer " + token } }
-    );
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    return d.values || [];
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`, { headers:{ Authorization:"Bearer "+token } });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message); return d.values||[];
   }
-
+  async function writeCell(token, range, value) {
+    const res = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED`,
+      { method:"PUT", headers:{ Authorization:"Bearer "+token, "Content-Type":"application/json" }, body:JSON.stringify({ values:[[value]] }) });
+    const d = await res.json(); if (d.error) throw new Error(d.error.message);
+  }
   function showStatus(id, msg, type) {
-    const el = document.getElementById(id);
-    el.style.display = "block";
-    el.style.color = type === "error" ? "var(--red)" : type === "ok" ? "var(--green)" : "var(--muted)";
-    el.textContent = type === "loading" ? "⏳ " + msg : type === "ok" ? "✓ " + msg : "✕ " + msg;
+    const el=document.getElementById(id); el.style.display="block";
+    el.style.color = type==="error"?"var(--red)":type==="ok"?"var(--green)":"var(--muted)";
+    el.textContent = type==="loading"?"⏳ "+msg:type==="ok"?"✓ "+msg:"✕ "+msg;
   }
 
-  // ════════════════════════════════
+  // ══════════════════════════
   // DASHBOARD
-  // ════════════════════════════════
+  // ══════════════════════════
   function saveBudget() {
-    budget = parseFloat(document.getElementById("budgetInput").value) || 8000;
+    budget = parseFloat(document.getElementById("budgetInput").value)||8000;
     localStorage.setItem("expense_budget", budget);
-    showStatus("dashStatus", "Orçamento salvo: " + fmt(budget), "ok");
+    showStatus("dashStatus","Orçamento salvo: "+fmt(budget),"ok");
   }
-
   async function loadDashboard() {
-    const btn = document.getElementById("btnLoad");
-    btn.disabled = true; btn.textContent = "Carregando...";
-    showStatus("dashStatus", "Conectando ao Google...", "loading");
+    const btn=document.getElementById("btnLoad"); btn.disabled=true; btn.textContent="Carregando...";
+    showStatus("dashStatus","Conectando ao Google...","loading");
     try {
       const token = await getToken(SHEET_RO);
-      showStatus("dashStatus", "Lendo planilha...", "loading");
-      const rows  = await fetchRange(token, DB_SHEET + "!A:E");
-      const month = parseInt(document.getElementById("selMonth").value);
-      const year  = parseInt(document.getElementById("selYear").value);
+      showStatus("dashStatus","Lendo planilha...","loading");
+      const rows = await fetchRange(token, DB_SHEET+"!A:E");
+      const month=parseInt(document.getElementById("selMonth").value);
+      const year=parseInt(document.getElementById("selYear").value);
       const txs = rows.filter(r => {
-        if (!r[0] || r[0] === "Data") return false;
-        const d = parseSheetDate(r[0]);
-        if (!d) return false;
-        if (d.getMonth() + 1 !== month || d.getFullYear() !== year) return false;
-        const ex = (r[4] || "").toString().toUpperCase();
-        return ex !== "TRUE" && ex !== "VERDADEIRO";
-      }).map(r => ({ date: parseSheetDate(r[0]), local: r[1]||"", cat: r[2]||"", value: parseValue(r[3]||"0") }));
+        if (!r[0]||r[0]==="Data") return false;
+        const d=parseSheetDate(r[0]); if (!d) return false;
+        if (d.getMonth()+1!==month||d.getFullYear()!==year) return false;
+        const ex=(r[4]||"").toString().toUpperCase(); return ex!=="TRUE"&&ex!=="VERDADEIRO";
+      }).map(r=>({ date:parseSheetDate(r[0]), local:r[1]||"", cat:r[2]||"", value:parseValue(r[3]||"0") }));
       renderDashboard(txs, month, year);
-      showStatus("dashStatus", `${txs.length} transações — ${monthName(month)}/${year}`, "ok");
-      document.getElementById("lastUpdate").textContent = "Atualizado em " + new Date().toLocaleString("pt-BR");
-    } catch(e) {
-      showStatus("dashStatus", "Erro: " + e.message, "error");
-    } finally {
-      btn.disabled = false; btn.textContent = "Carregar";
-    }
+      showStatus("dashStatus",`${txs.length} transações — ${monthName(month)}/${year}`,"ok");
+      document.getElementById("lastUpdate").textContent="Atualizado em "+new Date().toLocaleString("pt-BR");
+    } catch(e) { showStatus("dashStatus","Erro: "+e.message,"error"); }
+    finally { btn.disabled=false; btn.textContent="Carregar"; }
   }
-
   function renderDashboard(txs, month, year) {
-    const totalSpent = txs.reduce((s,t) => s + t.value, 0);
-    const remaining  = budget - totalSpent;
-    const today      = new Date();
-    const lastDay    = new Date(year, month, 0);
-    const daysLeft   = Math.max(1, Math.ceil((lastDay - today) / 86400000) + 1);
-    const perDay     = remaining / daysLeft;
-    const pct        = Math.min(100, (totalSpent / budget) * 100);
-
-    document.getElementById("kpiBudget").textContent    = fmt(budget);
-    document.getElementById("kpiSpent").textContent     = fmt(totalSpent);
-    document.getElementById("kpiSpentSub").textContent  = pct.toFixed(1) + "% do orçamento";
-    document.getElementById("kpiRemaining").textContent = fmt(remaining);
-    document.getElementById("kpiPerDay").textContent    = fmt(perDay);
-    document.getElementById("kpiPerDaySub").textContent = daysLeft + " dias restantes";
-
-    document.getElementById("kpiSpent").className     = "kpi-value " + (pct > 90 ? "neg" : pct > 70 ? "warn" : "");
-    document.getElementById("kpiRemaining").className = "kpi-value " + (remaining < 0 ? "neg" : remaining < budget * 0.2 ? "warn" : "good");
-    document.getElementById("kpiPerDay").className    = "kpi-value " + (perDay < 0 ? "neg" : perDay < 100 ? "warn" : "good");
-
-    document.getElementById("progressPct").textContent = pct.toFixed(1) + "%";
-    const fill = document.getElementById("progressFill");
-    fill.style.width = pct + "%";
-    fill.className = "progress-bar-fill" + (pct > 90 ? " danger" : pct > 70 ? " warn" : "");
-
-    renderWeekly(buildWeeks(txs, month, year));
-    renderDaily(buildDays(txs));
+    const totalSpent=txs.reduce((s,t)=>s+t.value,0), remaining=budget-totalSpent;
+    const lastDay=new Date(year,month,0), daysLeft=Math.max(1,Math.ceil((lastDay-new Date())/86400000)+1);
+    const perDay=remaining/daysLeft, pct=Math.min(100,(totalSpent/budget)*100);
+    document.getElementById("kpiBudget").textContent=fmt(budget);
+    document.getElementById("kpiSpent").textContent=fmt(totalSpent);
+    document.getElementById("kpiSpentSub").textContent=pct.toFixed(1)+"% do orçamento";
+    document.getElementById("kpiRemaining").textContent=fmt(remaining);
+    document.getElementById("kpiPerDay").textContent=fmt(perDay);
+    document.getElementById("kpiPerDaySub").textContent=daysLeft+" dias restantes";
+    document.getElementById("kpiSpent").className="kpi-value "+(pct>90?"neg":pct>70?"warn":"");
+    document.getElementById("kpiRemaining").className="kpi-value "+(remaining<0?"neg":remaining<budget*0.2?"warn":"good");
+    document.getElementById("kpiPerDay").className="kpi-value "+(perDay<0?"neg":perDay<100?"warn":"good");
+    document.getElementById("progressPct").textContent=pct.toFixed(1)+"%";
+    const fill=document.getElementById("progressFill"); fill.style.width=pct+"%";
+    fill.className="progress-bar-fill"+(pct>90?" danger":pct>70?" warn":"");
+    renderWeekly(buildWeeks(txs,month,year)); renderDaily(buildDays(txs));
   }
-
-  function getMondayOfWeek(date) {
-    const d = new Date(date);
-    const dow = d.getDay();
-    d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
-    d.setHours(0,0,0,0);
-    return d;
-  }
-
-  function buildWeeks(txs, month, year) {
-    const firstDay = new Date(year, month-1, 1);
-    const lastDay  = new Date(year, month, 0); lastDay.setHours(23,59,59,999);
-    const set = new Set();
-    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate()+1))
-      set.add(getMondayOfWeek(d).getTime());
-    const monthStart = new Date(year, month-1, 1);
-    const monthEnd   = new Date(lastDay);
-    return Array.from(set).sort((a,b)=>a-b).map(ts => {
-      const ws = new Date(ts), we = new Date(ts);
-      we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
-      const total = txs.filter(t => t.date >= ws && t.date <= we && t.date >= monthStart && t.date <= monthEnd)
-                       .reduce((s,t) => s+t.value, 0);
-      const ds = ws < monthStart ? monthStart : ws;
-      const de = we > monthEnd   ? monthEnd   : we;
-      return { label: fmtDate(ds) + " – " + fmtDate(de), total };
+  function getMondayOfWeek(date) { const d=new Date(date),dow=d.getDay(); d.setDate(d.getDate()+(dow===0?-6:1-dow)); d.setHours(0,0,0,0); return d; }
+  function buildWeeks(txs,month,year) {
+    const firstDay=new Date(year,month-1,1),lastDay=new Date(year,month,0); lastDay.setHours(23,59,59,999);
+    const set=new Set();
+    for (let d=new Date(firstDay);d<=lastDay;d.setDate(d.getDate()+1)) set.add(getMondayOfWeek(d).getTime());
+    const ms=new Date(year,month-1,1),me=new Date(lastDay);
+    return Array.from(set).sort((a,b)=>a-b).map(ts=>{
+      const ws=new Date(ts),we=new Date(ts); we.setDate(we.getDate()+6); we.setHours(23,59,59,999);
+      const total=txs.filter(t=>t.date>=ws&&t.date<=we&&t.date>=ms&&t.date<=me).reduce((s,t)=>s+t.value,0);
+      const ds=ws<ms?ms:ws,de=we>me?me:we;
+      return { label:fmtDate(ds)+" – "+fmtDate(de), total };
     });
   }
-
-  function buildDays(txs) {
-    const map = {};
-    txs.forEach(t => { const k = fmtDate(t.date); map[k] = (map[k]||0) + t.value; });
-    return Object.entries(map).sort((a,b) => a[0].localeCompare(b[0]));
-  }
-
+  function buildDays(txs) { const map={}; txs.forEach(t=>{const k=fmtDate(t.date);map[k]=(map[k]||0)+t.value;}); return Object.entries(map).sort((a,b)=>a[0].localeCompare(b[0])); }
   function renderWeekly(weeks) {
-    const tb = document.getElementById("weeklyBody");
-    if (!weeks.length) { tb.innerHTML = '<tr><td colspan="2" class="empty">Sem dados.</td></tr>'; return; }
-    const total = weeks.reduce((s,w) => s+w.total, 0);
-    tb.innerHTML = weeks.map((w,i) =>
-      `<tr><td>Semana ${i+1} <span style="color:var(--muted);font-size:11px">(${w.label})</span></td><td class="r">${fmt(w.total)}</td></tr>`
-    ).join("") + `<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
+    const tb=document.getElementById("weeklyBody");
+    if (!weeks.length){tb.innerHTML='<tr><td colspan="2" class="empty">Sem dados.</td></tr>';return;}
+    const total=weeks.reduce((s,w)=>s+w.total,0);
+    tb.innerHTML=weeks.map((w,i)=>`<tr><td>Semana ${i+1} <span style="color:var(--muted);font-size:11px">(${w.label})</span></td><td class="r">${fmt(w.total)}</td></tr>`).join("")
+      +`<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
   }
-
   function renderDaily(days) {
-    const tb = document.getElementById("dailyBody");
-    if (!days.length) { tb.innerHTML = '<tr><td colspan="2" class="empty">Sem dados.</td></tr>'; return; }
-    const total = days.reduce((s,d) => s+d[1], 0);
-    tb.innerHTML = days.map(([date,val]) =>
-      `<tr><td>${date}</td><td class="r">${fmt(val)}</td></tr>`
-    ).join("") + `<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
+    const tb=document.getElementById("dailyBody");
+    if (!days.length){tb.innerHTML='<tr><td colspan="2" class="empty">Sem dados.</td></tr>';return;}
+    const total=days.reduce((s,d)=>s+d[1],0);
+    tb.innerHTML=days.map(([date,val])=>`<tr><td>${date}</td><td class="r">${fmt(val)}</td></tr>`).join("")
+      +`<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
   }
 
-  // ════════════════════════════════
-  // IMPORT
-  // ════════════════════════════════
-  function onTsvChange() {
-    const val   = document.getElementById("tsvInput").value.trim();
-    const lines = val ? val.split("\n").filter(l => l.trim()).length : 0;
-    const badge = document.getElementById("lineBadge");
-    const btn   = document.getElementById("btnSend");
-    if (lines > 0) {
-      badge.style.display = "inline";
-      badge.textContent = lines + " linha" + (lines !== 1 ? "s" : "");
-      btn.disabled = false;
-    } else {
-      badge.style.display = "none";
-      btn.disabled = true;
-    }
+  // ══════════════════════════
+  // DATABASE
+  // ══════════════════════════
+  function setMode(mode) {
+    dbMode = mode;
+    document.getElementById("btnView").classList.toggle("active", mode==="view");
+    document.getElementById("btnEdit").classList.toggle("active", mode==="edit");
+    if (dbRows.length) renderDb();
   }
 
-  function clearImport() {
-    document.getElementById("tsvInput").value = "";
-    document.getElementById("btnSend").disabled = true;
-    document.getElementById("lineBadge").style.display = "none";
-    document.getElementById("importStatus").style.display = "none";
-  }
-
-  function parseTsv(raw) {
-    return raw.trim().split("\n")
-      .map(l => l.split("\t").map(c => c.trim()))
-      .filter(r => r.some(c => c !== ""));
-  }
-
-  async function findLastRow(token) {
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(DB_SHEET + "!A:A")}`,
-      { headers: { Authorization: "Bearer " + token } }
-    );
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    return d.values ? d.values.length : 1;
-  }
-
-  async function appendRows(token, rows) {
-    const lastRow = await findLastRow(token);
-    const range   = encodeURIComponent(DB_SHEET + "!A" + (lastRow + 1));
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
-      {
-        method: "PUT",
-        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-        body: JSON.stringify({ values: rows })
-      }
-    );
-    const d = await res.json();
-    if (d.error) throw new Error(d.error.message);
-    return d.updatedRows || rows.length;
-  }
-
-  async function handleSend() {
-    const raw = document.getElementById("tsvInput").value;
-    if (!raw.trim()) { showStatus("importStatus", "Cole o bloco TSV antes de enviar.", "error"); return; }
-    const rows = parseTsv(raw);
-    if (!rows.length) { showStatus("importStatus", "Nenhuma linha válida encontrada.", "error"); return; }
-    const btn = document.getElementById("btnSend");
-    btn.disabled = true; btn.textContent = "🔐 Autorizando...";
+  async function loadDatabase() {
+    const btn=document.getElementById("btnDbLoad"); btn.disabled=true; btn.textContent="Carregando...";
+    showStatus("dbStatus","Conectando ao Google...","loading");
     try {
       const token = await getToken(SHEET_RW);
-      btn.textContent = "⏳ Enviando...";
-      const inserted = await appendRows(token, rows);
-      showStatus("importStatus", inserted + " linha(s) inserida(s) com sucesso!", "ok");
-      document.getElementById("tsvInput").value = "";
-      document.getElementById("lineBadge").style.display = "none";
-    } catch(e) {
-      showStatus("importStatus", "Erro: " + e.message, "error");
-    } finally {
-      btn.disabled = false; btn.textContent = "Enviar para Sheets →";
+      showStatus("dbStatus","Lendo planilha...","loading");
+      const rows = await fetchRange(token, DB_SHEET+"!A:E");
+      const month=parseInt(document.getElementById("dbSelMonth").value);
+      const year=parseInt(document.getElementById("dbSelYear").value);
+      dbRows=[];
+      rows.forEach((r,i)=>{
+        if (!r[0]||r[0]==="Data") return;
+        const d=parseSheetDate(r[0]); if (!d) return;
+        if (d.getMonth()+1!==month||d.getFullYear()!==year) return;
+        dbRows.push({ sheetRow:i+1, data:[...r] });
+      });
+      applyFilters();
+      showStatus("dbStatus",`${dbRows.length} transações — ${monthName(month)}/${year}`,"ok");
+    } catch(e) { showStatus("dbStatus","Erro: "+e.message,"error"); }
+    finally { btn.disabled=false; btn.textContent="Carregar"; }
+  }
+
+  function applyFilters() {
+    const dateQ  = (document.getElementById("filterDate").value||"").trim(); // yyyy-mm-dd
+    const localQ = (document.getElementById("filterLocal").value||"").toLowerCase().trim();
+    const catQ   = (document.getElementById("filterCat").value||"").toLowerCase().trim();
+    filteredIndices = dbRows.map((_,i)=>i).filter(i=>{
+      const r=dbRows[i].data;
+      const local=(r[1]||"").toLowerCase();
+      const cat=(r[2]||"").toLowerCase();
+      if (localQ && !local.includes(localQ)) return false;
+      if (catQ   && !cat.includes(catQ))     return false;
+      if (dateQ) {
+        const d = parseSheetDate(r[0]);
+        if (!d) return false;
+        const dd = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+        if (dd !== dateQ) return false;
+      }
+      return true;
+    });
+    renderDb();
+  }
+
+  function renderDb() {
+    const tb=document.getElementById("dbBody");
+    const count=document.getElementById("dbCount");
+    if (!dbRows.length){tb.innerHTML='<tr><td colspan="5" class="empty">Carregue os dados.</td></tr>';count.textContent="";return;}
+    count.textContent=filteredIndices.length+" de "+dbRows.length+" transações";
+    if (!filteredIndices.length){tb.innerHTML='<tr><td colspan="5" class="empty">Nenhuma transação corresponde ao filtro.</td></tr>';return;}
+
+    tb.innerHTML = filteredIndices.map(idx=>{
+      const row=dbRows[idx], r=row.data;
+      const date=r[0]||"", local=r[1]||"", cat=r[2]||"", val=r[3]||"";
+      const excl=(r[4]||"").toString().toUpperCase()==="TRUE"||(r[4]||"").toString().toUpperCase()==="VERDADEIRO";
+
+      const catCell = dbMode==="edit"
+        ? `<select class="cat-select" id="cat-${idx}" onchange="onCatChange(${idx},this)">
+            <option value="" ${!cat?"selected":""}>— sem classificação —</option>
+            ${CATEGORIES.map(c=>`<option value="${c}" ${c.toLowerCase()===cat.toLowerCase()?"selected":""}>${c}</option>`).join("")}
+            <option value="__new__">✏️ Nova categoria...</option>
+            ${cat&&!CATEGORIES.some(c=>c.toLowerCase()===cat.toLowerCase())?`<option value="${cat}" selected>${cat}</option>`:""}
+           </select>
+           <input class="cat-new-input" id="catnew-${idx}" placeholder="Nova categoria..." style="display:none"
+             onblur="onNewCatBlur(${idx},this)" onkeydown="if(event.key==='Enter')this.blur()"/>`
+        : cat
+          ? `<span class="cat-badge">${cat}</span>`
+          : `<span class="cat-badge empty-badge">sem categoria</span>`;
+
+      const exclCell = dbMode==="edit"
+        ? `<div class="toggle-wrap"><label class="toggle">
+            <input type="checkbox" ${excl?"checked":""} onchange="onToggleExclude(${idx},this)"/>
+            <div class="toggle-track"></div><div class="toggle-thumb"></div>
+           </label></div>`
+        : `<div class="toggle-wrap"><div class="excl-dot" style="background:${excl?"var(--red)":"var(--green)"}"></div></div>`;
+
+      return `<tr>
+        <td style="white-space:nowrap;font-size:11px">${date}</td>
+        <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px" title="${local}">${local}</td>
+        <td>${catCell}</td>
+        <td class="r">${val}</td>
+        <td>${exclCell}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  async function onCatChange(idx,sel) {
+    if (sel.value==="__new__") {
+      sel.style.display="none";
+      const inp=document.getElementById("catnew-"+idx); inp.style.display="block"; inp.focus(); return;
     }
+    await saveCat(idx, sel.value, sel);
+  }
+  async function onNewCatBlur(idx,inp) {
+    const val=inp.value.trim(); inp.style.display="none";
+    const sel=document.getElementById("cat-"+idx); sel.style.display="block";
+    if (!val) return;
+    const opt=document.createElement("option"); opt.value=val; opt.textContent=val; opt.selected=true; sel.appendChild(opt);
+    await saveCat(idx, val, sel);
+  }
+  async function saveCat(idx, value, sel) {
+    const row=dbRows[idx]; sel.className="cat-select saving";
+    try {
+      const token=await getToken(SHEET_RW);
+      await writeCell(token, `${DB_SHEET}!C${row.sheetRow}`, value);
+      row.data[2]=value; sel.className="cat-select saved";
+      setTimeout(()=>sel.className="cat-select",1500);
+      showStatus("dbStatus","Classificação salva!","ok");
+    } catch(e) { sel.className="cat-select"; showStatus("dbStatus","Erro ao salvar: "+e.message,"error"); }
+  }
+  async function onToggleExclude(idx,checkbox) {
+    const row=dbRows[idx], value=checkbox.checked;
+    const td=checkbox.closest("td"); const dot=document.createElement("span"); dot.className="saving-dot"; td.appendChild(dot);
+    try {
+      const token=await getToken(SHEET_RW);
+      await writeCell(token, `${DB_SHEET}!E${row.sheetRow}`, value?"TRUE":"FALSE");
+      row.data[4]=value?"TRUE":"FALSE";
+      showStatus("dbStatus",value?"Transação excluída do cálculo.":"Transação incluída no cálculo.","ok");
+    } catch(e) { checkbox.checked=!value; showStatus("dbStatus","Erro ao salvar: "+e.message,"error"); }
+    finally { dot.remove(); }
+  }
+
+  // ══════════════════════════
+  // IMPORT
+  // ══════════════════════════
+  function onTsvChange() {
+    const val=document.getElementById("tsvInput").value.trim();
+    const lines=val?val.split("\n").filter(l=>l.trim()).length:0;
+    const badge=document.getElementById("lineBadge"),btn=document.getElementById("btnSend");
+    if (lines>0){badge.style.display="inline";badge.textContent=lines+" linha"+(lines!==1?"s":"");btn.disabled=false;}
+    else{badge.style.display="none";btn.disabled=true;}
+  }
+  function clearImport() {
+    document.getElementById("tsvInput").value="";
+    document.getElementById("btnSend").disabled=true;
+    document.getElementById("lineBadge").style.display="none";
+    document.getElementById("importStatus").style.display="none";
+  }
+  function parseTsv(raw) { return raw.trim().split("\n").map(l=>l.split("\t").map(c=>c.trim())).filter(r=>r.some(c=>c!=="")); }
+  async function findLastRow(token) {
+    const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(DB_SHEET+"!A:A")}`,{headers:{Authorization:"Bearer "+token}});
+    const d=await res.json(); if (d.error) throw new Error(d.error.message); return d.values?d.values.length:1;
+  }
+  async function appendRows(token,rows) {
+    const lastRow=await findLastRow(token);
+    const range=encodeURIComponent(DB_SHEET+"!A"+(lastRow+1));
+    const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${range}?valueInputOption=USER_ENTERED`,
+      {method:"PUT",headers:{Authorization:"Bearer "+token,"Content-Type":"application/json"},body:JSON.stringify({values:rows})});
+    const d=await res.json(); if (d.error) throw new Error(d.error.message); return d.updatedRows||rows.length;
+  }
+  async function handleSend() {
+    const raw=document.getElementById("tsvInput").value;
+    if (!raw.trim()){showStatus("importStatus","Cole o bloco TSV antes de enviar.","error");return;}
+    const rows=parseTsv(raw); if (!rows.length){showStatus("importStatus","Nenhuma linha válida.","error");return;}
+    const btn=document.getElementById("btnSend"); btn.disabled=true; btn.textContent="🔐 Autorizando...";
+    try {
+      const token=await getToken(SHEET_RW); btn.textContent="⏳ Enviando...";
+      const inserted=await appendRows(token,rows);
+      showStatus("importStatus",inserted+" linha(s) inserida(s) com sucesso!","ok");
+      document.getElementById("tsvInput").value=""; document.getElementById("lineBadge").style.display="none";
+    } catch(e){showStatus("importStatus","Erro: "+e.message,"error");}
+    finally{btn.disabled=false;btn.textContent="Enviar para Sheets →";}
   }
 
   // ── HELPERS ──
   function parseSheetDate(val) {
     if (!val) return null;
-    const m = String(val).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-    if (m) return new Date(+m[3], +m[2]-1, +m[1]);
-    const n = parseFloat(val);
-    if (!isNaN(n) && n > 1000) {
-      const d = new Date(1899, 11, 30);
-      d.setDate(d.getDate() + Math.floor(n));
-      return d;
-    }
+    const m=String(val).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (m) return new Date(+m[3],+m[2]-1,+m[1]);
+    const n=parseFloat(val);
+    if (!isNaN(n)&&n>1000){const d=new Date(1899,11,30);d.setDate(d.getDate()+Math.floor(n));return d;}
     return null;
   }
-
-  function parseValue(val) {
-    if (typeof val === "number") return val;
-    return parseFloat(String(val).replace("R$","").replace(/\./g,"").replace(",",".").trim()) || 0;
-  }
-
-  function fmt(n) {
-    return "R$ " + Math.abs(n).toLocaleString("pt-BR", { minimumFractionDigits:2, maximumFractionDigits:2 });
-  }
-
-  function fmtDate(d) {
-    return d.toLocaleDateString("pt-BR", { day:"2-digit", month:"2-digit" });
-  }
-
-  function monthName(m) {
-    return ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m-1];
-  }
+  function parseValue(val){if(typeof val==="number")return val;return parseFloat(String(val).replace("R$","").replace(/\./g,"").replace(",",".").trim())||0;}
+  function fmt(n){return "R$ "+Math.abs(n).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function fmtDate(d){return d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"});}
+  function monthName(m){return["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m-1];}
 </script>
 </body>
 </html>
