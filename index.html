@@ -221,6 +221,19 @@
       <div class="budget-input-wrap"><span class="budget-prefix">R$</span><input type="number" id="budgetInput" value="8000" min="0" step="100"/></div>
       <button class="btn-ghost" onclick="saveBudget()">Salvar</button>
     </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <label style="color:var(--muted);font-size:11px;display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="dashAutoRefreshToggle" onchange="toggleDashAutoRefresh()" style="accent-color:var(--accent);width:14px;height:14px"/>
+        Atualizar automaticamente
+      </label>
+      <select id="dashAutoRefreshInterval" onchange="resetDashAutoRefresh()" style="font-size:11px;padding:4px 8px;min-width:80px">
+        <option value="15">15s</option>
+        <option value="30" selected>30s</option>
+        <option value="60">1min</option>
+        <option value="120">2min</option>
+      </select>
+      <span id="dashRefreshIndicator" style="font-size:11px;color:var(--muted)"></span>
+    </div>
     <div class="status-bar" id="dashStatus"></div>
     <div class="kpi-grid">
       <div class="kpi-card blue"><div class="kpi-label">Orçamento</div><div class="kpi-value" id="kpiBudget">—</div><div class="kpi-sub">limite mensal</div></div>
@@ -518,7 +531,70 @@ Ex:
     if (dbRows.length) renderDb();
   }
 
-  // ── AUTO REFRESH ──
+  // ── DASHBOARD AUTO REFRESH ──
+  let dashCountdownTimer = null;
+  let dashRefreshCountdown = 0;
+
+  function toggleDashAutoRefresh() {
+    const on = document.getElementById("dashAutoRefreshToggle").checked;
+    if (on) startDashAutoRefresh();
+    else stopDashAutoRefresh();
+  }
+
+  function startDashAutoRefresh() {
+    stopDashAutoRefresh();
+    const secs = parseInt(document.getElementById("dashAutoRefreshInterval").value);
+    dashRefreshCountdown = secs;
+    updateDashCountdown();
+    dashCountdownTimer = setInterval(() => {
+      dashRefreshCountdown--;
+      updateDashCountdown();
+      if (dashRefreshCountdown <= 0) {
+        silentDashRefresh();
+        dashRefreshCountdown = secs;
+      }
+    }, 1000);
+  }
+
+  function stopDashAutoRefresh() {
+    clearInterval(dashCountdownTimer);
+    dashCountdownTimer = null;
+    document.getElementById("dashRefreshIndicator").textContent = "";
+  }
+
+  function resetDashAutoRefresh() {
+    if (document.getElementById("dashAutoRefreshToggle").checked) startDashAutoRefresh();
+  }
+
+  function updateDashCountdown() {
+    const on = document.getElementById("dashAutoRefreshToggle").checked;
+    document.getElementById("dashRefreshIndicator").textContent = on ? "⟳ próximo em " + dashRefreshCountdown + "s" : "";
+  }
+
+  async function silentDashRefresh() {
+    document.getElementById("dashRefreshIndicator").textContent = "⟳ atualizando...";
+    try {
+      const token = await getToken();
+      const rows  = await fetchRange(token, DB_SHEET+"!A:E");
+      const month = parseInt(document.getElementById("selMonth").value);
+      const year  = parseInt(document.getElementById("selYear").value);
+      const txs = rows.filter(r => {
+        if (!r[0]||r[0]==="Data") return false;
+        const d=parseSheetDate(r[0]); if (!d) return false;
+        if (d.getMonth()+1!==month||d.getFullYear()!==year) return false;
+        const ex=(r[4]||"").toString().toUpperCase(); return ex!=="TRUE"&&ex!=="VERDADEIRO";
+      }).map(r=>({ date:parseSheetDate(r[0]), local:r[1]||"", cat:r[2]||"", value:parseValue(r[3]||"0") }));
+      renderDashboard(txs, month, year);
+      document.getElementById("lastUpdate").textContent = "Atualizado em " + new Date().toLocaleString("pt-BR");
+      const secs = parseInt(document.getElementById("dashAutoRefreshInterval").value);
+      dashRefreshCountdown = secs;
+      updateDashCountdown();
+    } catch(e) {
+      document.getElementById("dashRefreshIndicator").textContent = "⚠️ erro ao atualizar";
+    }
+  }
+
+  // ── DB AUTO REFRESH ──
   let autoRefreshTimer = null;
   let refreshCountdown = 0;
   let countdownTimer = null;
