@@ -245,6 +245,10 @@
       <div class="progress-header"><span>Consumo do orçamento</span><span id="progressPct">—</span></div>
       <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill" style="width:0%"></div></div>
     </div>
+    <div class="section-title">Gastos por categoria</div>
+    <div class="table-wrap">
+      <table><thead><tr><th>Categoria</th><th class="r">Total (R$)</th></tr></thead><tbody id="categoryBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody></table>
+    </div>
     <div class="section-title">Gastos por semana</div>
     <div class="table-wrap">
       <table><thead><tr><th>Semana</th><th class="r">Total (R$)</th></tr></thead><tbody id="weeklyBody"><tr><td colspan="2" class="empty">Carregue os dados.</td></tr></tbody></table>
@@ -490,8 +494,26 @@ Ex:
     document.getElementById("progressPct").textContent=pct.toFixed(1)+"%";
     const fill=document.getElementById("progressFill"); fill.style.width=pct+"%";
     fill.className="progress-bar-fill"+(pct>90?" danger":pct>70?" warn":"");
-    renderWeekly(buildWeeks(txs,month,year)); renderDaily(buildDays(txs));
+    renderCategory(buildCategories(txs)); renderWeekly(buildWeeks(txs,month,year)); renderDaily(buildDays(txs));
   }
+  function buildCategories(txs) {
+    const map = {};
+    txs.forEach(t => {
+      const k = t.cat && t.cat.trim() ? t.cat.trim() : "Sem categoria";
+      map[k] = (map[k] || 0) + t.value;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }
+
+  function renderCategory(cats) {
+    const tb = document.getElementById("categoryBody");
+    if (!cats.length) { tb.innerHTML = '<tr><td colspan="2" class="empty">Sem dados.</td></tr>'; return; }
+    const total = cats.reduce((s, c) => s + c[1], 0);
+    tb.innerHTML = cats.map(([cat, val]) =>
+      `<tr><td>${cat}</td><td class="r">${fmt(val)}</td></tr>`
+    ).join("") + `<tr class="total-row"><td>Total</td><td class="r">${fmt(total)}</td></tr>`;
+  }
+
   function getMondayOfWeek(date) { const d=new Date(date),dow=d.getDay(); d.setDate(d.getDate()+(dow===0?-6:1-dow)); d.setHours(0,0,0,0); return d; }
   function buildWeeks(txs,month,year) {
     const firstDay=new Date(year,month-1,1),lastDay=new Date(year,month,0); lastDay.setHours(23,59,59,999);
