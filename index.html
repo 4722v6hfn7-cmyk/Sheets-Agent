@@ -452,10 +452,18 @@ Ex:
   // ══════════════════════════
   // DASHBOARD
   // ══════════════════════════
-  function saveBudget() {
+  async function saveBudget() {
     budget = parseFloat(document.getElementById("budgetInput").value)||8000;
     localStorage.setItem("expense_budget", budget);
-    showStatus("dashStatus","Orçamento salvo: "+fmt(budget),"ok");
+    showStatus("dashStatus","Salvando orçamento na planilha...","loading");
+    try {
+      const token = await getToken();
+      await writeCell(token, "report!C11", budget);
+      showStatus("dashStatus","Orçamento salvo: "+fmt(budget),"ok");
+      if (document.getElementById("kpiSpent").textContent !== "—") loadDashboard();
+    } catch(e) {
+      showStatus("dashStatus","Salvo localmente, mas erro ao salvar na planilha: "+e.message,"error");
+    }
   }
   async function loadDashboard() {
     const btn=document.getElementById("btnLoad"); btn.disabled=true; btn.textContent="Carregando...";
@@ -479,9 +487,11 @@ Ex:
     finally { btn.disabled=false; btn.textContent="Carregar"; }
   }
   function renderDashboard(txs, month, year) {
-    const totalSpent=txs.reduce((s,t)=>s+t.value,0), remaining=budget-totalSpent;
+    const totalSpent=txs.reduce((s,t)=>s+t.value,0);
+    const remaining=Math.max(0, budget-totalSpent);
     const lastDay=new Date(year,month,0), daysLeft=Math.max(1,Math.ceil((lastDay-new Date())/86400000)+1);
-    const perDay=remaining/daysLeft, pct=Math.min(100,(totalSpent/budget)*100);
+    const perDay=totalSpent>=budget?0:remaining/daysLeft;
+    const pct=Math.min(100,(totalSpent/budget)*100);
     document.getElementById("kpiBudget").textContent=fmt(budget);
     document.getElementById("kpiSpent").textContent=fmt(totalSpent);
     document.getElementById("kpiSpentSub").textContent=pct.toFixed(1)+"% do orçamento";
@@ -489,8 +499,8 @@ Ex:
     document.getElementById("kpiPerDay").textContent=fmt(perDay);
     document.getElementById("kpiPerDaySub").textContent=daysLeft+" dias restantes";
     document.getElementById("kpiSpent").className="kpi-value "+(pct>90?"neg":pct>70?"warn":"");
-    document.getElementById("kpiRemaining").className="kpi-value "+(remaining<0?"neg":remaining<budget*0.2?"warn":"good");
-    document.getElementById("kpiPerDay").className="kpi-value "+(perDay<0?"neg":perDay<100?"warn":"good");
+    document.getElementById("kpiRemaining").className="kpi-value "+(remaining===0?"neg":remaining<budget*0.2?"warn":"good");
+    document.getElementById("kpiPerDay").className="kpi-value "+(perDay===0?"neg":perDay<100?"warn":"good");
     document.getElementById("progressPct").textContent=pct.toFixed(1)+"%";
     const fill=document.getElementById("progressFill"); fill.style.width=pct+"%";
     fill.className="progress-bar-fill"+(pct>90?" danger":pct>70?" warn":"");
